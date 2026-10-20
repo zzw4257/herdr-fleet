@@ -703,3 +703,28 @@ paths = [
 ]
 verify = ["bridge/surface/protocol.test.ts", "bridge/surface/key-gate.test.ts", "fleet/send-patience.test.ts", "web/src/lib/reply-action.test.ts", "web/src/lib/harness/guard.test.ts"]
 reason = "The steps, their bounds and the cleanup all live inside `SendProtocol`'s private methods, so no owned module can reach them (patient-send-probe). TIMING (fork-only): `BOUNDS` keeps upstream's shape with longer numbers as plain constants, and `poll()` caps its doubling gap at `POLL_GAP_MAX_MS`, one line; making the bounds injectable was rejected because it rewrites every bound reference in the file. CLEANUP (offered upstream as its own pull request, written identically so an adoption that contains it removes that half of this port): after a probe whose character did not show, one more probe bound is watched and a character that lands alone where S0's box was gets one Backspace through the gate, read back by polling; at S0 of a send, command or Add to it a box holding only the probe character is swept the same way and S0 is read again. Both reuse the probe's own pass predicates and never send Escape. TESTS: upstream cases that pinned 1200/900/2500/3000 ms or three probe reads are restated through the exported `BOUNDS` with their assertions unchanged; the cleanup and patience cases are added beside them. PHONE: postSend's two requests carry `SEND_REQUEST_TIMEOUT_MS` from the owned module, one imported name and one option each, because the generic 20 s mutation budget is shorter than a send may now take; every other request keeps its budget. TAP SETTLE (patient-tap-settle): `settleAfterSend`'s bound is `TAP_SETTLE_DEADLINE_MS` from the owned module, one imported name, and its loop repeats the last listed gap until that bound instead of ending with the list; the upstream cases that pinned 1.2 s or one read per listed gap are restated against the exported bound. KEY TOKEN (patient-submit-token): the gate's `TOKEN_LIFETIME_MS` is `KEY_TOKEN_LIFETIME_MS` from the owned module, one imported name, because the commit records `submit-sent` between mint and key and that write outlasts 150 ms on a network filesystem; the order and the revision check are upstream's, and the one protocol case that aged a token by a literal 151 ms is restated through the exported lifetime."
+
+[[owned]]
+id = "codex-segment-rollout-compat"
+intent = "Hold the reader that names a Codex Desktop paginated session's rollout file, with its suite."
+paths = [
+  "bridge/journal/fleet-codex-rollout-name.ts",
+  "bridge/journal/fleet-codex-rollout-name.test.ts"
+]
+contracts = ["a session whose only rollout is `rollout-<ts>-<uuid>_<segment-uuid>.jsonl` resolves to its newest segment, and a plain `rollout-<ts>-<uuid>.jsonl` still wins"]
+verify = ["bridge/journal/fleet-codex-rollout-name.test.ts"]
+
+[[invasive]]
+id = "codex-segment-rollout-port"
+intent = "TEMPORARY compatibility port: let the Codex transcript source find Codex Desktop's segment-named rollouts, until upstream does."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = [
+  "bridge/journal/codex.ts#pickCodexRollout(names, sessionId)"
+]
+verify = [
+  "bridge/journal/fleet-codex-rollout-name.test.ts",
+  "bridge/journal/codex.test.ts"
+]
+reason = "temporary until upstream matches segment names; retire at the sync adopting that release. Codex Desktop threads in paginated history mode write `rollout-<ts>-<uuid>_<segment-uuid>.jsonl`; CodexTranscriptSource.findUnder matched only the `-<uuid>.jsonl` suffix, so such a pane showed \"No transcript file was found\" although its rollout sits in the date directory being walked, in the same JSONL grammar. The decision lives in the fork-owned bridge/journal/fleet-codex-rollout-name.ts; the port is one import, findUnder taking the session id instead of a precomputed suffix, and the one call that picks the name (the anchor). Containment, the newest-date walk and the cache are upstream's, untouched. Upstream unaware as of v1.22.6."

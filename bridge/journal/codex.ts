@@ -45,6 +45,7 @@ import {
 } from "./reduce.ts";
 import { asRecord, asText, probeTail, tokenCount, walkBack } from "./cache-probe.ts";
 import { containedRealpath, exists, loadTail, readSinceFile, rootList, statFile } from "./files.ts";
+import { pickCodexRollout } from "./fleet-codex-rollout-name.ts";
 import { clamp, MAX_RESULT_CHARS, MAX_TEXT_CHARS, oneLine, stripAnsi, summarizeToolInput } from "./text.ts";
 import { classifyToolCall, type ToolCall } from "./tool-call.ts";
 import type {
@@ -552,9 +553,8 @@ export class CodexTranscriptSource implements TranscriptSource {
       this.pathCache.delete(sessionId);
     }
 
-    const suffix = `-${sessionId.toLowerCase()}.jsonl`;
     for (const root of this.roots) {
-      const hit = await this.findUnder(root, suffix);
+      const hit = await this.findUnder(root, sessionId);
       // A hit that failed containment is `null` too — that root has nothing it may serve for this
       // uuid either way, and the next root is asked on its own terms (files.ts header).
       if (hit === null) continue;
@@ -565,7 +565,7 @@ export class CodexTranscriptSource implements TranscriptSource {
   }
 
   /** Newest first at every level: a session being read is almost always today's. */
-  private async findUnder(root: string, suffix: string): Promise<string | null> {
+  private async findUnder(root: string, sessionId: string): Promise<string | null> {
     for (const year of await descending(root)) {
       for (const month of await descending(join(root, year))) {
         for (const day of await descending(join(root, year, month))) {
@@ -576,9 +576,8 @@ export class CodexTranscriptSource implements TranscriptSource {
           } catch {
             continue;
           }
-          const hit = names.find(
-            (n) => n.startsWith("rollout-") && n.toLowerCase().endsWith(suffix),
-          );
+          // DOWNSTREAM PORT (FORK.toml codex-segment-rollout-port): also Codex Desktop's segment names.
+          const hit = pickCodexRollout(names, sessionId);
           if (hit === undefined) continue;
           return containedRealpath(join(dir, hit), root);
         }

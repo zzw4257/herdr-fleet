@@ -19,6 +19,10 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+### Fixed
+
+- **Codex Desktop sessions show their transcript.** A paginated thread's segment-named rollout is now found instead of "No transcript file was found".
+
 ## [3.19.0] - 2026-10-19
 
 Every member redeploys: the change is in the bridge's key gate.
