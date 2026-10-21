@@ -19,11 +19,15 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+## [3.21.0] - 2026-10-21
+
+Every member redeploys, lead first: the Files media read and the journal's picture readers are in the bridge; the rest is the web bundle and the Gateway.
+
 ### Added
 
-- **Screenshots and pasted pictures from Claude and Codex show up.** A tool's screenshot appears under its call in Chat and in History and the mirror's picture card; Chat draws journal pictures as images, not as "Image:" lines.
-- **Dev servers, PDFs and videos open through your browser editor.** With `editor.url` in Fleet's `settings.json`, a `localhost:<port>` link in Chat or the mirror opens through the editor's port proxy, the Files header gains Open in editor, and `open-pane-in-editor` opens the Pane's folder.
-- **A preview panel shows screenshots and local pages in place.** Beside the route on a wide screen and over it on a phone (`toggle-preview-panel`, `Prefix+O`); a Chat screenshot or `localhost` link opens it, Files plays videos and audio, draws PDFs in place with PDF.js, and can run an HTML file's scripts in an isolated document.
+- **Screenshots and pasted pictures from Claude and Codex show up.** A tool's screenshot appears under its call in Chat and in History and the mirror's picture card; Chat draws journal pictures as images, not as "Image:" lines. ([8bddd26e](https://github.com/zzw4257/herdr-fleet/commit/8bddd26e))
+- **Dev servers, PDFs and videos open through your browser editor.** With `editor.url` in Fleet's `settings.json`, a `localhost:<port>` link in Chat or the mirror opens through the editor's port proxy, the Files header gains Open in editor, and `open-pane-in-editor` opens the Pane's folder. ([3523bdd5](https://github.com/zzw4257/herdr-fleet/commit/3523bdd5))
+- **A preview panel shows screenshots and local pages in place.** Beside the route on a wide screen and over it on a phone (`toggle-preview-panel`, `Prefix+O`); a Chat screenshot or `localhost` link opens it, Files plays videos and audio, draws PDFs in place with PDF.js, and can run an HTML file's scripts in an isolated document. ([3523bdd5](https://github.com/zzw4257/herdr-fleet/commit/3523bdd5))
 
 ## [3.20.0] - 2026-10-20
 
