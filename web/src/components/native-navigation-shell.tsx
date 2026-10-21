@@ -80,6 +80,9 @@ import { markPanesSeen } from "@/lib/fleet-mark-seen";
 import { attentionByPlace, paneAttention, tabAttentionKey } from "@/lib/fleet-navigation-attention";
 import { usePins } from "@/lib/pins";
 import { setStatus } from "@/lib/status";
+import { FleetPreviewPanel } from "@/components/fleet-preview-panel";
+import { editorFolderHref } from "@/lib/fleet-editor-links";
+import { togglePreview } from "@/lib/fleet-preview";
 import { useFleetSettings } from "@/lib/fleet-settings";
 import { homePath, panePath, settingsPath, spacePath } from "@/lib/nav";
 import { triage } from "@/lib/triage";
@@ -440,6 +443,11 @@ function FleetNavigationShell({
   // operator is actually on, and on a pack that Space may not be the one the URL's scope narrows to.
   const tabsForCommands = data.allTabs ?? data.tabs;
   const currentPane = allPanes.find((pane) => pane.paneId === paneId);
+  // The Pane the preview's Screen tab follows: the current one, on this machine only.
+  const previewPane =
+    currentPane === undefined || currentPane.host !== undefined
+      ? null
+      : { paneId: currentPane.paneId, scope: paneScope(data.scope, currentPane, data.servers, data.sessions) };
   // The Tabs the hierarchy draws: cycling and the ordinals count these, so a key never lands on an
   // empty Tab and `select-tab-2` is the second row the rail shows.
   const visibleTabs = useMemo(() => tabsWithPanes(tabsForCommands, allPanes), [tabsForCommands, allPanes]);
@@ -479,6 +487,7 @@ function FleetNavigationShell({
     const built: CommandAdapters = {
       "open-fleet-settings": () => navigate(settingsPath(data.scope)),
       "toggle-fleet-sidebars": () => setRailsCollapsed((collapsed) => !collapsed),
+      "toggle-preview-panel": () => togglePreview(),
       "next-pane": () => open(stepPaneEverywhere(hierarchyOrder, currentPane ?? null, 1)),
       "previous-pane": () => open(stepPaneEverywhere(hierarchyOrder, currentPane ?? null, -1)),
       "next-agent": () => open(stepRoster(roster.entries, currentKey, 1)),
@@ -552,6 +561,13 @@ function FleetNavigationShell({
         "next-pane-in-tab": () => open(stepPaneInTab(allPanes, currentPane, 1)),
         "previous-pane-in-tab": () => open(stepPaneInTab(allPanes, currentPane, -1)),
       } satisfies CommandAdapters);
+      // Only for a Pane on this machine: the editor serves this disk, not a crew member's.
+      const editor = fleetSettings.editorUrl;
+      if (editor !== null && currentPane.host === undefined && currentPane.cwd !== "") {
+        built["open-pane-in-editor"] = () => {
+          window.open(editorFolderHref(editor, currentPane.cwd), "_blank", "noopener,noreferrer");
+        };
+      }
     } else if (spaceId !== undefined) {
       // A Space page has no current Pane, but it has a current Space, and that is all a new Tab needs.
       built["create-tab"] = () => newTab(spaceId);
@@ -594,6 +610,7 @@ function FleetNavigationShell({
     roster.entries,
     currentKey,
     openEntry,
+    fleetSettings.editorUrl,
   ]);
 
   const hierarchy = (
@@ -692,6 +709,9 @@ function FleetNavigationShell({
         >
           {children}
         </div>
+
+        {/* Previews in place (fleet-preview-panel.tsx): beside the route here, over it on a phone. */}
+        <FleetPreviewPanel pane={previewPane} />
 
         <RailSeparator
           side="right"

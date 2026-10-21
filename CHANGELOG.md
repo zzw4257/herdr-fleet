@@ -22,6 +22,8 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 ### Added
 
 - **Screenshots and pasted pictures from Claude and Codex show up.** A tool's screenshot appears under its call in Chat and in History and the mirror's picture card; Chat draws journal pictures as images, not as "Image:" lines.
+- **Dev servers, PDFs and videos open through your browser editor.** With `editor.url` in Fleet's `settings.json`, a `localhost:<port>` link in Chat or the mirror opens through the editor's port proxy, the Files header gains Open in editor, and `open-pane-in-editor` opens the Pane's folder.
+- **A preview panel shows screenshots and local pages in place.** Beside the route on a wide screen and over it on a phone (`toggle-preview-panel`, `Prefix+O`); a Chat screenshot or `localhost` link opens it, Files plays videos and audio, draws PDFs in place with PDF.js, and can run an HTML file's scripts in an isolated document.
 
 ## [3.20.0] - 2026-10-20
 

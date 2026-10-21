@@ -3,6 +3,9 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useFileLinks, type FileLinkTarget } from "@/components/file-links";
 import { CopyableBlock } from "@/components/ui/copyable-block";
 import { codeSpanPath, findFilePaths } from "@/lib/file-paths";
+import { openLoopbackInPreview } from "@/components/fleet-preview-panel";
+import { fleetPreviewHref } from "@/lib/fleet-editor-links";
+import { useFleetEditorUrl } from "@/lib/fleet-settings";
 import { headingAnchors, parseMarkdown, spansText, type MdBlock, type MdSpan } from "@/lib/markdown";
 import { splitHighlight } from "@/lib/transcript-search";
 
@@ -186,6 +189,8 @@ function CodeSpan({ text }: { text: string }) {
 
 function LinkSpan({ span }: { span: Extract<MdSpan, { kind: "link" }> }) {
   const resolve = useContext(LinkContext);
+  // DOWNSTREAM PORT (FORK.toml editor-preview-links): a loopback URL opens through the operator's editor.
+  const editor = useFleetEditorUrl();
   const label = (
     <InLinkContext.Provider value>
       <Spans spans={span.spans} />
@@ -200,7 +205,8 @@ function LinkSpan({ span }: { span: Extract<MdSpan, { kind: "link" }> }) {
     // one you have to reassemble in your head before you trust the tap.
     return (
       <a
-        href={span.href}
+        href={fleetPreviewHref(editor, span.href)}
+        onClick={(event) => openLoopbackInPreview(event, span.href, editor)}
         target="_blank"
         rel="noopener noreferrer"
         className={`${LINK_CLASS} ${breakClass(flatten(span.spans))}`}

@@ -331,12 +331,17 @@ kind must come from the install kind (`cli/install-kind.ts`), never assume one.
   roughly 7 GB of RAM, which bricked installs on ordinary boxes (1.0.0-beta.44). The mux-name check
   left with it; CI covers it through `scripts/check-mux-names.test.ts`.
 - **A finding is fixed in the code, never suppressed and never cleared by downgrading a rule.**
-  Upstream's tree carries zero `oxlint-disable` comments and that is the policy. **The fork's one
-  exception, by its boundary rule:** a fork-owned file that IS a parse boundary of the class ADR 0019
+  Upstream's tree carries zero `oxlint-disable` comments and that is the policy. **The fork's two
+  exceptions, by its boundary rule:** a fork-owned file that IS a parse boundary of the class ADR 0019
   exempts suppresses `anti-slop/no-runtime-typeof` at the line, with an
   `// oxlint-disable-next-line anti-slop/no-runtime-typeof -- <reason>` comment, rather than joining a
-  block in `.oxlintrc.json`, which is upstream's file and stays upstream's text. No other rule and no
-  other shape of suppression is allowed. A `// SAFETY:`
+  block in `.oxlintrc.json`, which is upstream's file and stays upstream's text. And the preview
+  panel's Browser frame (`web/src/components/fleet-preview-panel.tsx`, owner-approved 2026-10-21)
+  suppresses `react/iframe-missing-sandbox` at that one attribute: the frame only ever loads the
+  operator's editor origin (the editor's port proxy), never this page's, so `allow-scripts
+  allow-same-origin` grants that origin nothing over Fleet, and without `allow-same-origin` the
+  editor's sign-in cookies cannot ride the framed page's subresources. Every other frame keeps a
+  sandbox the rule accepts. No other rule and no other shape of suppression is allowed. A `// SAFETY:`
   comment must state the invariant that makes the assertion sound — "safe, trust me" clears the
   rule and fails review.
 - **Changing what's enforced goes through the rationale table in

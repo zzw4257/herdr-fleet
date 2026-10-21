@@ -41,6 +41,7 @@ export type CommandId =
   | "open-pane-switcher"
   | "open-fleet-settings"
   | "toggle-fleet-sidebars"
+  | "toggle-preview-panel"
   | "edit-pane-tags"
   | "manage-pane-tags"
   | "create-tab"
@@ -65,6 +66,7 @@ export type CommandId =
   | "next-agent"
   | `select-agent-${CommandOrdinal}`
   | "copy-fleet-pane-link"
+  | "open-pane-in-editor"
   | "toggle-type-mode"
   | "send-escape"
   | "send-enter"
@@ -106,6 +108,8 @@ const DEFINITIONS: readonly CommandDefinition[] = [
   { id: "open-pane-switcher", name: "Open Pane Switcher", scope: "global", defaults: [] },
   { id: "open-fleet-settings", name: "Open Fleet Settings", scope: "global", defaults: ["Prefix+S"] },
   { id: "toggle-fleet-sidebars", name: "Toggle Fleet Sidebars", scope: "global", defaults: ["Prefix+B"] },
+  // The preview panel beside the route (screenshots, this machine's ports through the editor).
+  { id: "toggle-preview-panel", name: "Toggle Preview Panel", scope: "global", defaults: ["Prefix+O"] },
   { id: "edit-pane-tags", name: "Edit Pane Tags", scope: "pane", defaults: [] },
   { id: "manage-pane-tags", name: "Manage Tags", scope: "global", defaults: [] },
 
@@ -174,6 +178,8 @@ const DEFINITIONS: readonly CommandDefinition[] = [
   ),
 
   { id: "copy-fleet-pane-link", name: "Copy Fleet Pane Link", scope: "pane", defaults: [] },
+  // The current Pane's working folder in the operator's browser editor (Fleet setting `editor.url`).
+  { id: "open-pane-in-editor", name: "Open Pane Folder in Editor", scope: "pane", defaults: [] },
   { id: "toggle-type-mode", name: "Toggle Type Mode", scope: "pane", defaults: [] },
 
   // Fixed sends. Every one of them is a constant sequence chosen by its id; none of them accepts a

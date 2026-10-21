@@ -5,7 +5,7 @@
 // answers 404 here, which is why "unavailable" is a first-class answer rather than an error — the
 // settings page then simply does not offer the editor.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import {
   DEFAULT_FLEET_SETTINGS,
@@ -113,6 +113,7 @@ const saved = new Set<() => void>();
 /** Tell every reader the document on disk has changed, so a save lands without a reload. */
 export function notifyFleetSettingsSaved(): void {
   for (const listener of saved) listener();
+  if (editorAsked) readEditorUrl();
 }
 
 /**
@@ -152,4 +153,45 @@ export function useFleetSettings(): FleetSettings {
   }, []);
 
   return settings;
+}
+
+// ── THE EDITOR ADDRESS ────────────────────────────────────────────────────────────────────────────
+//
+// Every external link on a page asks for it (FORK.toml editor-previews), so it is ONE shared value
+// read once per page load and again after a save, never one request per mounted link. Absent, or on
+// any failure, it is null and every link stays exactly as the agent wrote it.
+
+let editorUrl: string | null = null;
+let editorAsked = false;
+const editorListeners = new Set<() => void>();
+
+function readEditorUrl(): void {
+  void (async () => {
+    try {
+      const document = await fetchFleetSettings();
+      if (document === null) return;
+      const parsed = parseFleetSettingsText(document.document);
+      if (!parsed.ok || parsed.settings.editorUrl === editorUrl) return;
+      editorUrl = parsed.settings.editorUrl;
+      for (const listener of editorListeners) listener();
+    } catch {
+      // Keep whatever is in force.
+    }
+  })();
+}
+
+function subscribeEditorUrl(listener: () => void): () => void {
+  editorListeners.add(listener);
+  if (!editorAsked) {
+    editorAsked = true;
+    readEditorUrl();
+  }
+  return () => {
+    editorListeners.delete(listener);
+  };
+}
+
+/** The operator's browser editor (`editor.url`), or null when none is set. */
+export function useFleetEditorUrl(): string | null {
+  return useSyncExternalStore(subscribeEditorUrl, () => editorUrl, () => null);
 }

@@ -121,3 +121,33 @@ test("tag commands accept both shortcut shapes and round-trip through settings",
   expect(round.ok && round.settings.bindings.get("edit-pane-tags")?.map(formatBinding)).toEqual(["Prefix+T"]);
   expect(round.ok && round.settings.bindings.get("manage-pane-tags")?.map(formatBinding)).toEqual(["Ctrl+Shift+G"]);
 });
+
+describe("the editor setting", () => {
+  test("an http(s) address is kept without its trailing slash, shortcuts or not", () => {
+    expect(accepted({ editor: { url: "https://code.example.com/" } }).editorUrl).toBe("https://code.example.com");
+    expect(accepted({ editor: { url: "http://127.0.0.1:8080/ide/" }, shortcuts: {} }).editorUrl).toBe(
+      "http://127.0.0.1:8080/ide",
+    );
+    expect(accepted({ schemaVersion: 1 }).editorUrl).toBeNull();
+  });
+
+  test("anything carrying a secret or state, or not an http(s) address, refuses the document", () => {
+    for (const url of [
+      "https://user:pw@code.example.com",
+      "https://code.example.com/?tkn=1",
+      "https://code.example.com/#x",
+      "javascript:alert(1)",
+      "code.example.com",
+      42,
+    ]) {
+      expect(rejection({ editor: { url } }).at).toBe("editor.url");
+    }
+    expect(rejection({ editor: { url: "https://code.example.com", folder: "/" } }).at).toBe("editor.folder");
+    expect(rejection({ editor: "https://code.example.com" }).at).toBe("editor");
+  });
+
+  test("it survives a round trip", () => {
+    const settings = accepted({ editor: { url: "https://code.example.com" } });
+    expect(parseFleetSettingsText(serializeFleetSettings(settings))).toEqual({ ok: true, settings });
+  });
+});

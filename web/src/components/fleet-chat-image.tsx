@@ -4,7 +4,9 @@
 // The same rules as History's own picture (components/transcript-view.tsx): `imageSrc` decides whether
 // the reference is loadable at all — inline bytes or this host's blob route, nothing else — and the
 // bytes are loaded with the pairing token (`useAuthedUrl`), because an `<img src>` cannot send it. A
-// reference it refuses draws nothing. A tap opens the full-size picture in a new tab.
+// reference it refuses draws nothing. A tap opens it in the preview panel's Screen tab, or full size
+// in a new tab where no panel is on the page.
+import { openPictureInPreview } from "@/components/fleet-preview-panel";
 import { imageSrc } from "@/lib/api";
 import { useAuthedUrl } from "@/lib/authed-url";
 import { ft, useFleetLocale } from "@/lib/fleet-i18n";
@@ -17,7 +19,13 @@ export function FleetChatImage({ url }: { url: string }) {
   if (loaded === null) return null;
   return (
     <div className="px-5 py-1" data-slot="fleet-chat-image">
-      <a href={loaded} target="_blank" rel="noopener noreferrer" className="inline-block cursor-zoom-in">
+      <a
+        href={loaded}
+        onClick={(event) => openPictureInPreview(event, url)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block cursor-zoom-in"
+      >
         <img
           src={loaded}
           alt={ft("fleet.chat.imageAlt")}

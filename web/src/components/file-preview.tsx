@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 
 import { MarkdownText, type ImageResolver, type LinkResolver } from "@/components/markdown-text";
 import { TokenLine } from "@/components/changes-view";
+import { FleetFileMedia, FleetHtmlPreview, isFleetMediaPath } from "@/components/fleet-file-media";
 import { ImageFrame } from "@/components/ui/image-frame";
 import { useLocale } from "@/hooks/use-locale";
 import type { FileImageAnswer } from "@/lib/api";
@@ -576,6 +577,16 @@ export function FileContent({
   line?: number;
 }) {
   useLocale();
+  // DOWNSTREAM PORT (FORK.toml preview-panel-ports): a PDF, a video or an audio file is drawn in place
+  // (components/fleet-file-media.tsx); what its bytes turn out not to be falls back to this screen's own.
+  if (isFleetMediaPath(file.path) && (file.binary || /\.pdf$/iu.test(file.path))) {
+    const fallback = file.binary ? (
+      <Quiet>{t("files.binary", { size: formatBytes(file.size) })}</Quiet>
+    ) : (
+      <SourceView text={file.text} path={file.path} line={line} />
+    );
+    return <FleetFileMedia path={file.path} fallback={fallback} />;
+  }
   if (file.binary) {
     if (images !== undefined && isRasterImagePath(file.path)) return <ImagePreview file={file} images={images} />;
     return <Quiet>{t("files.binary", { size: formatBytes(file.size) })}</Quiet>;
@@ -589,7 +600,12 @@ export function FileContent({
     <>
       {kind === "markdown" && <MarkdownPreview text={file.text} path={file.path} links={links} images={images} version={fileVersionOf(file.size, file.mtimeMs)} />}
       {kind === "json" && <JsonPreview text={file.text} path={file.path} />}
-      {kind === "html" && <HtmlPreview text={file.text} />}
+      {kind === "html" && (
+        // The same port: the script-less preview, with the fork's way to run the page's scripts.
+        <FleetHtmlPreview path={file.path}>
+          <HtmlPreview text={file.text} />
+        </FleetHtmlPreview>
+      )}
       {kind === "svg" && <SvgPreview file={file} />}
       {kind === null && <SourceView text={file.text} path={file.path} line={line} />}
       {file.truncated && <Note>{t("files.fileTruncated")}</Note>}

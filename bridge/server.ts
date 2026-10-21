@@ -28,6 +28,7 @@ import {
   serveFiles,
   UNKNOWN_PATH,
 } from "./files-view.ts";
+import { fleetMediaResponse, readMedia } from "./fleet-files-media.ts";
 import { apiError, type ApiErrorBody, type ApiErrorDetail, type ErrorCode } from "./error-codes.ts";
 import { keysDeliverable, MUX_CAPABILITIES, supportsCapability, type MuxCapability, type MuxCapabilityDeclaration } from "./mux/capabilities.ts";
 import { muxUnsupported } from "./mux/types.ts";
@@ -286,6 +287,9 @@ const WEB_DIR = join(pluginRoot(), "web", "dist");
 const CONTENT_TYPES = new Map<string, string>([
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
+  // DOWNSTREAM PORT (FORK.toml files-media-port): the PDF.js worker ships as `.mjs`, which
+  // COMPRESSIBLE_EXT already lists; without its type `nosniff` makes the browser refuse it.
+  [".mjs", "text/javascript; charset=utf-8"],
   [".css", "text/css; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
   [".webmanifest", "application/manifest+json; charset=utf-8"],
@@ -4187,6 +4191,11 @@ export async function filesImage(
   if (path === null) return text("missing path", 400);
   const root = filesSubjectRoot(engine, subject, home);
   if (root === null) return unknownPath();
+  // DOWNSTREAM PORT (FORK.toml files-media-port): `?as=media` is the fork's PDF, video and audio read.
+  if (url.searchParams.get("as") === "media") {
+    const media = await readMedia({ root, home, privateFolders }, path);
+    return media === UNKNOWN_PATH || !media.available ? unknownPath() : secure(fleetMediaResponse(media));
+  }
   return filesImageResponse(await readImage({ root, home, privateFolders }, path));
 }
 

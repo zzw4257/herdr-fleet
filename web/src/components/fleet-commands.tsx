@@ -101,6 +101,7 @@ function isSelfEvident(id: CommandId): boolean {
     id === "edit-pane-tags" ||
     id === "manage-pane-tags" ||
     id === "toggle-fleet-sidebars" ||
+    id === "toggle-preview-panel" ||
     id === "next-tab" ||
     id === "previous-tab" ||
     id === "create-tab" ||

@@ -23,7 +23,7 @@ export const FLEET_SETTINGS_FILENAME = "settings.json";
 export const FLEET_SETTINGS_SCHEMA_VERSION = 1;
 
 /** The keys a document may carry. Anything else is a rejection, not a thing to ignore. */
-const TOP_LEVEL_KEYS = new Set(["schemaVersion", "shortcuts"]);
+const TOP_LEVEL_KEYS = new Set(["schemaVersion", "shortcuts", "editor"]);
 const SHORTCUT_KEYS = new Set(["prefix", "bindings"]);
 
 export interface FleetSettings {
@@ -32,13 +32,26 @@ export interface FleetSettings {
   readonly bindings: ReadonlyMap<CommandId, readonly Binding[]>;
   /** Bindings that will work on some browsers and not others, for the editor to mark. */
   readonly risky: readonly string[];
+  /** The operator's browser editor, without a trailing slash. Null: no editor links at all. */
+  readonly editorUrl: string | null;
 }
 
 export const DEFAULT_FLEET_SETTINGS: FleetSettings = {
   prefix: DEFAULT_COMMAND_PREFIX,
   bindings: new Map(),
   risky: [],
+  editorUrl: null,
 };
+
+/** An absolute http(s) address with nothing secret or stateful in it, or null. */
+function parseEditorUrl(value: JsonValue | undefined): string | null {
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- parse boundary (ADR 0019's class): the operator-authored settings JSON; this module is its one reader.
+  if (typeof value !== "string" || !URL.canParse(value)) return null;
+  const url = new URL(value);
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") return null;
+  return url.href.replace(/\/+$/, "");
+}
 
 export interface SettingsRejection {
   /** Where the fault is, in the document's own terms. */
@@ -77,8 +90,21 @@ export function parseFleetSettings(value: JsonValue | undefined): SettingsParseR
     return reject("schemaVersion", `expected schemaVersion ${FLEET_SETTINGS_SCHEMA_VERSION}`);
   }
 
+  let editorUrl: string | null = null;
+  const editor = value.editor;
+  if (editor !== undefined) {
+    if (!isPlainObject(editor)) return reject("editor", "editor must be an object");
+    for (const key of Object.keys(editor)) {
+      if (key !== "url") return reject(`editor.${key}`, `unknown setting "${key}"`);
+    }
+    editorUrl = parseEditorUrl(editor.url);
+    if (editorUrl === null) {
+      return reject("editor.url", "the editor url must be an http(s) address with no credentials, query or fragment");
+    }
+  }
+
   const shortcuts = value.shortcuts;
-  if (shortcuts === undefined) return { ok: true, settings: DEFAULT_FLEET_SETTINGS };
+  if (shortcuts === undefined) return { ok: true, settings: { ...DEFAULT_FLEET_SETTINGS, editorUrl } };
   if (!isPlainObject(shortcuts)) return reject("shortcuts", "shortcuts must be an object");
   for (const key of Object.keys(shortcuts)) {
     if (!SHORTCUT_KEYS.has(key)) return reject(`shortcuts.${key}`, `unknown setting "${key}"`);
@@ -162,7 +188,7 @@ export function parseFleetSettings(value: JsonValue | undefined): SettingsParseR
     );
   }
 
-  return { ok: true, settings: { prefix, bindings, risky } };
+  return { ok: true, settings: { prefix, bindings, risky, editorUrl } };
 }
 
 /** Parse text, so a syntax error is reported as one rather than as a shape problem. */
@@ -190,6 +216,8 @@ export function serializeFleetSettings(settings: FleetSettings): string {
     {
       schemaVersion: FLEET_SETTINGS_SCHEMA_VERSION,
       shortcuts: { prefix: settings.prefix, bindings },
+      // `undefined` is left out by JSON.stringify, so no editor writes no `editor` key.
+      editor: settings.editorUrl === null ? undefined : { url: settings.editorUrl },
     },
     null,
     2,

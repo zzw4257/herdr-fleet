@@ -299,8 +299,10 @@ function foldingHost(host: Host): Host {
   return host.caseInsensitive ? host : { ...host, caseInsensitive: true };
 }
 
+// DOWNSTREAM PORT (FORK.toml files-media-port): Resolved, resolveRoot, checkedTarget and openedFileAllowed
+// are exported so the fork's media read (bridge/fleet-files-media.ts) runs exactly these checks.
 /** The pieces one request works with, after the root has been checked. */
-interface Resolved {
+export interface Resolved {
   rootReal: string;
   /** Each private folder as given and as its real path; whichever spelling a target reaches. */
   denied: string[];
@@ -312,7 +314,7 @@ interface Resolved {
  * The root's real path, when it is a folder and its real path is still narrow enough to read:
  * never `/`, home, or a folder above home, on the real paths of both. `null` reads as `no-folder`.
  */
-async function resolveRoot(ctx: FilesContext): Promise<Resolved | null> {
+export async function resolveRoot(ctx: FilesContext): Promise<Resolved | null> {
   const host = ctx.host ?? HOST;
   const fs = ctx.fs ?? NODE_FILES_FS;
   if (!isAbsoluteFolder(ctx.root, host)) return null;
@@ -349,7 +351,7 @@ function isDeniedReal(real: string, r: Resolved): boolean {
  * The real path of `segments` under the root, when it is inside the root and not denied. `null` is
  * `unknown-path`, whatever the cause.
  */
-async function checkedTarget(segments: readonly string[], r: Resolved): Promise<string | null> {
+export async function checkedTarget(segments: readonly string[], r: Resolved): Promise<string | null> {
   const last = segments.at(-1);
   if (last !== undefined && isStateSecretName(last)) return null;
   const candidate = segments.length === 0 ? r.rootReal : r.host.path.join(r.rootReal, ...segments);
@@ -369,7 +371,7 @@ async function checkedTarget(segments: readonly string[], r: Resolved): Promise<
  * the file there must be the handle's own (device and inode), so a folder swapped and swapped back
  * around the open is caught by the identity, and one still swapped by the containment.
  */
-function openedFileAllowed(segments: readonly string[], r: Resolved, real: string) {
+export function openedFileAllowed(segments: readonly string[], r: Resolved, real: string) {
   return async (opened: OpenedFile): Promise<boolean> => {
     if (opened.path !== null) {
       return isInside(r.host, opened.path, r.rootReal) && !isDeniedReal(opened.path, r);

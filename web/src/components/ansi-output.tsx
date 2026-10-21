@@ -34,6 +34,9 @@ import { findMatches, splitSegment, type FindMatch } from "@/lib/find";
 import { findLinks, type LinkMatch } from "@/lib/links";
 import { findFilePaths } from "@/lib/file-paths";
 import { isPlainClick, useFileLinks, type FileLinkOpener } from "@/components/file-links";
+import { openLoopbackInPreview } from "@/components/fleet-preview-panel";
+import { fleetPreviewHref } from "@/lib/fleet-editor-links";
+import { useFleetEditorUrl } from "@/lib/fleet-settings";
 
 /**
  * A link in the mirror: an autolinked URL (opens a new tab), or a path the agent printed that
@@ -416,6 +419,8 @@ export const AnsiOutput = memo(function AnsiOutput({
   // path it asked about turns out to exist.
   const openFile = useFileLinks();
   const links = useMemo(() => mirrorLinks(haystack, urls, openFile), [haystack, urls, openFile]);
+  // DOWNSTREAM PORT (FORK.toml editor-preview-links): a loopback URL opens through the operator's editor.
+  const editor = useFleetEditorUrl();
 
   useEffect(() => {
     onMatchCount?.(matches.length);
@@ -520,7 +525,14 @@ export const AnsiOutput = memo(function AnsiOutput({
         );
       }
       return (
-        <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+        <a
+          key={i}
+          href={fleetPreviewHref(editor, link.href)}
+          onClick={(event) => openLoopbackInPreview(event, link.href, editor)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
           {renderFind(p.text, pieceStart)}
         </a>
       );

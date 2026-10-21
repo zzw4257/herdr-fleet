@@ -326,7 +326,7 @@ paths = [
   "web/package.json#version"
 ]
 verify = ["fleet/build-flag.test.ts", "scripts/check-version.sh", "cli/update-check.test.ts", "scripts/release-notes.test.ts"]
-reason = "Three files plus the newest numbered changelog heading must agree on one version, and `scripts/check-version.sh` and the pre-commit changelog guard both read those filenames directly. Giving our changelog a new name would mean editing both of those upstream scripts — two invasive paths, in tooling — to say what this file now honestly is, so CHANGELOG.md keeps the canonical name and holds our entries — written in the bold-lead bullet shape upstream's changelog guard checks since 1.8, which this fork follows rather than porting the guard, and Collie's own history is retained beside it under its own name, which this file's header links — accumulatively, because upstream truncates that file and retaining Collie's history is not the same as retaining its bytes. Two upstream tests new by 1.14 read a Collie release section out of CHANGELOG.md — the protocol floor's heading in `cli/update-check.test.ts` and the contributor credits of 1.12.0 and 1.12.1 in `scripts/release-notes.test.ts`, joined by 1.15.0's — so each reads COLLIE_CHANGELOG.md for that section instead, with every assertion unchanged; the release-notes checks of this product's own newest section and Unreleased bullets still read CHANGELOG.md. The bump in the root package.json is the same one change and rides fleet-build-port, because this manifest allows one entry per path. web/package.json also carries the Fleet build's statement (`VITE_HERDR_FLEET=1` on its `build` script, native-navigation-sidebars-port), because every production bundle is built through that script and the manifest allows one entry per path. This entry also carries the fork's first DEPENDENCY on that file, and the lockfile that follows from it (attach-the-browser-to-the-real-terminal): the Pane's terminal surface renders a byte stream, which needs a terminal emulator in the browser, and `@xterm/xterm` with `@xterm/addon-fit` is that. Both are pinned exactly rather than by range — this is the code that interprets whatever a remote terminal emits, so which bytes it runs is not a resolver's choice — and the same reasoning as oxlint's exact pins in the root manifest. `web/bun.lock` joins the paths because it is the first lockfile this fork has ever moved: nothing upstream-owned had changed one before, so it had no classification, and a lockfile that changes outside the manifest is exactly the drift the boundary check exists to refuse."
+reason = "Three files plus the newest numbered changelog heading must agree on one version, and `scripts/check-version.sh` and the pre-commit changelog guard both read those filenames directly. Giving our changelog a new name would mean editing both of those upstream scripts — two invasive paths, in tooling — to say what this file now honestly is, so CHANGELOG.md keeps the canonical name and holds our entries — written in the bold-lead bullet shape upstream's changelog guard checks since 1.8, which this fork follows rather than porting the guard, and Collie's own history is retained beside it under its own name, which this file's header links — accumulatively, because upstream truncates that file and retaining Collie's history is not the same as retaining its bytes. Two upstream tests new by 1.14 read a Collie release section out of CHANGELOG.md — the protocol floor's heading in `cli/update-check.test.ts` and the contributor credits of 1.12.0 and 1.12.1 in `scripts/release-notes.test.ts`, joined by 1.15.0's — so each reads COLLIE_CHANGELOG.md for that section instead, with every assertion unchanged; the release-notes checks of this product's own newest section and Unreleased bullets still read CHANGELOG.md. The bump in the root package.json is the same one change and rides fleet-build-port, because this manifest allows one entry per path. web/package.json also carries the Fleet build's statement (`VITE_HERDR_FLEET=1` on its `build` script, native-navigation-sidebars-port), because every production bundle is built through that script and the manifest allows one entry per path. This entry also carries the fork's first DEPENDENCY on that file, and the lockfile that follows from it (attach-the-browser-to-the-real-terminal): the Pane's terminal surface renders a byte stream, which needs a terminal emulator in the browser, and `@xterm/xterm` with `@xterm/addon-fit` is that. Both are pinned exactly rather than by range — this is the code that interprets whatever a remote terminal emits, so which bytes it runs is not a resolver's choice — and the same reasoning as oxlint's exact pins in the root manifest. `web/bun.lock` joins the paths because it is the first lockfile this fork has ever moved: nothing upstream-owned had changed one before, so it had no classification, and a lockfile that changes outside the manifest is exactly the drift the boundary check exists to refuse. The fork's SECOND dependency on web/package.json is `pdfjs-dist` (preview-panel), pinned exactly for the same reason as the terminal emulator: it interprets arbitrary bytes an agent wrote, so which code runs is not a resolver's choice. It draws Files' PDFs in place on canvases (web/src/components/fleet-pdf-view.tsx, its own lazily loaded chunk), because Chromium's viewer refuses every sandboxed frame and a phone browser draws no framed PDF; its optional `@napi-rs/canvas` is the Node-only native canvas, never bundled into the page. The lockfile lines it added were resolved against the public npm registry, so web/bun.lock names no mirror."
 
 [[invasive]]
 id = "fleet-build-port"
@@ -426,7 +426,7 @@ reason = "Manual Pane fit is Fleet's end to end (relocate-manual-pane-fit): the 
 
 [[invasive]]
 id = "native-pane-page-port"
-intent = "Let the Pane page carry the fork's narrow ports: the content renderer and its Chat gate, the shell's switcher, the keyboard commands, the manual-fit hook, the declined column and the folded strip."
+intent = "Let the Pane page carry the fork's narrow ports: the content renderer and its Chat gate, the shell's switcher, the keyboard commands, the manual-fit hook, the preview panel's screen feed, the declined column and the folded strip."
 strategy = "adapt"
 review = "every-upstream-sync"
 reviewed = "v1.22.6"
@@ -435,6 +435,7 @@ paths = [
   "web/src/components/agent-chat.test.tsx#the Fleet shell's switcher port"
 ]
 verify = [
+  "web/src/components/fleet-preview-panel.test.tsx",
   "web/src/components/agent-chat.test.tsx",
   "web/src/components/fleet-pane-fit.test.tsx",
   "web/src/components/fleet-pane-route.test.tsx",
@@ -442,7 +443,7 @@ verify = [
   "fleet/ui/commands/fixed-key-port.test.ts",
   "web/src/lib/i18n/i18n.test.ts"
 ]
-reason = "The Pane page is Collie's and every one of these is a port onto it, attributed here because this manifest allows one entry per path; each adds a hook call, a prop or a gate and no logic. MANUAL FIT (relocate-manual-pane-fit): one `useFleetPaneFit` call hands over what only this page knows — the Pane, its scope, the read-only and unreachable-host verdicts, whether the Pane is gone, the mirror's scrollport and the text size — and receives the Display row for native-manual-pane-fit-port's `afterTextSize` slot and the one fit function the `fit-pane-width` command calls. CONTENT RENDERER and CHAT GATE (pane-surface-route-port, native-pane-content-port): one optional typed `renderContent` replaces only the body, keeping the native AppBar, identity, actions and Find/Zen state; Collie's Chat body is offered only while no renderer is in place (`chatOffered = renderContent === undefined`), so the terminal surface offers no Chat switch, warms no live window and leaves the stored `paneView` alone; Find and Zen take the fork's terminal-aware `hasOutput`. SWITCHER AND MARK (native-navigation-sidebars-port, native-pane-chrome-port): the switcher sheet reads its content and title through one hook and stands its entry down at the shared rails' 80rem breakpoint, and the header's mark claim is that hook's answer — declined only while the Fleet shell supplies a switcher, so a bundle with no shell keeps upstream's mark. TASK DELIVERY (composer-voice-rank-port): one `bindingPane` prop handed to the composer. KEYBOARD (drive-the-fleet-from-the-keyboard): the Pane-scoped commands register through one hook, with a constant-key sender guarded by the same read-only and unreachable-host checks (Send Alt+Up's chord is verified by fixed-key-port.test.ts). DECLINED COLUMN (decline-the-centred-pane-column): upstream 28255ae and 3870c1c cap and centre this route with a ladder up to 1400px and a matching `wide` header claim; the fork spends that width on its navigation rails, so the wrapper keeps the phone bound alone and the header makes no width claim. The owner settled that on 2026-09-05; what would reopen it is the rails no longer claiming that width. The `wide` option is left where upstream put it, unclaimed. FOLDED STRIP (native-pane-chrome-port): the tab row keeps Collie's own fold control, because Collie 1.21 retired the automatic fold that once made it redundant, and the strip band exposes optional ground/top-inset variables whose bare defaults are transparent/zero. The test file carries the cases for each, and Collie 1.17's Chat-by-default (ADR 0082) and Files view keep their own cases unchanged. Collie 1.18's saved-copy Chat read (`savedCopy: stale`) joins the same warmed window and stays behind `chatOffered`; its manual fold control is upstream's. Collie 1.19's model label reads the raw footer's last rows through helpers beside the page's props; the fork keeps its content-renderer prop beside them. Collie 1.20's copy helpers for the output card are taken beside them."
+reason = "The Pane page is Collie's and every one of these is a port onto it, attributed here because this manifest allows one entry per path; each adds a hook call, a prop or a gate and no logic. MANUAL FIT (relocate-manual-pane-fit): one `useFleetPaneFit` call hands over what only this page knows — the Pane, its scope, the read-only and unreachable-host verdicts, whether the Pane is gone, the mirror's scrollport and the text size — and receives the Display row for native-manual-pane-fit-port's `afterTextSize` slot and the one fit function the `fit-pane-width` command calls. CONTENT RENDERER and CHAT GATE (pane-surface-route-port, native-pane-content-port): one optional typed `renderContent` replaces only the body, keeping the native AppBar, identity, actions and Find/Zen state; Collie's Chat body is offered only while no renderer is in place (`chatOffered = renderContent === undefined`), so the terminal surface offers no Chat switch, warms no live window and leaves the stored `paneView` alone; Find and Zen take the fork's terminal-aware `hasOutput`. SWITCHER AND MARK (native-navigation-sidebars-port, native-pane-chrome-port): the switcher sheet reads its content and title through one hook and stands its entry down at the shared rails' 80rem breakpoint, and the header's mark claim is that hook's answer — declined only while the Fleet shell supplies a switcher, so a bundle with no shell keeps upstream's mark. TASK DELIVERY (composer-voice-rank-port): one `bindingPane` prop handed to the composer. KEYBOARD (drive-the-fleet-from-the-keyboard): the Pane-scoped commands register through one hook, with a constant-key sender guarded by the same read-only and unreachable-host checks (Send Alt+Up's chord is verified by fixed-key-port.test.ts). DECLINED COLUMN (decline-the-centred-pane-column): upstream 28255ae and 3870c1c cap and centre this route with a ladder up to 1400px and a matching `wide` header claim; the fork spends that width on its navigation rails, so the wrapper keeps the phone bound alone and the header makes no width claim. The owner settled that on 2026-09-05; what would reopen it is the rails no longer claiming that width. The `wide` option is left where upstream put it, unclaimed. FOLDED STRIP (native-pane-chrome-port): the tab row keeps Collie's own fold control, because Collie 1.21 retired the automatic fold that once made it redundant, and the strip band exposes optional ground/top-inset variables whose bare defaults are transparent/zero. The test file carries the cases for each, and Collie 1.17's Chat-by-default (ADR 0082) and Files view keep their own cases unchanged. Collie 1.18's saved-copy Chat read (`savedCopy: stale`) joins the same warmed window and stays behind `chatOffered`; its manual fold control is upstream's. Collie 1.19's model label reads the raw footer's last rows through helpers beside the page's props; the fork keeps its content-renderer prop beside them. Collie 1.20's copy helpers for the output card are taken beside them. PREVIEW SCREEN FEED (preview-panel): one hook call after `useChatWindow` publishes the newest picture of the session window the page already holds (web/src/lib/fleet-preview.ts `useFleetScreenFeed`), so the preview panel's Screen tab follows a computer-use run with no read of its own."
 
 [[invasive]]
 id = "crew-focus-audit-name-port"
@@ -764,3 +765,80 @@ verify = [
   "web/src/lib/chat-items.test.ts"
 ]
 reason = "Collie's readers keep a Claude tool_result's text blocks only and Codex's text blocks only, so a computer-use or browser screenshot never reached History, the mirror's picture card or Chat, and Chat drew even a journal picture as the notice 'Image: <url>'. The decisions live in fork-owned modules: bridge/journal/fleet-journal-images.ts reads the picture shapes (Claude `source.base64`, Codex `input_image.image_url`) and passes every value through upstream's resolveImageUrl, bounded at 8 M characters; web/src/components/fleet-chat-image.tsx draws one exactly as History's JournalImage does (imageSrc, then useAuthedUrl). The ports: claude.ts assigns the helper's answer to the answered call's `result.imageUrl` (and keeps an image-only orphan result); chat-items.ts adds an `image` ChatItem, turns an image part into one instead of a notice, and puts a tool result's `imageUrl` right after its call; the now-unused `t` import and the paragraph describing the notice go, and chat-items.test.ts restates its one notice case as an image block. Two paths this capability also touches are attributed elsewhere by this manifest, which allows one entry per path: bridge/journal/codex.ts rides codex-journal-port and web/src/components/chat-cards.tsx rides native-chat-density-markers. The mirror's picture card and History already read `result.imageUrl`, so they need no port. Upstream unaware as of v1.22.6."
+
+[[owned]]
+id = "editor-previews"
+intent = "Hold the links from Fleet into the operator's browser editor — loopback port proxy, folder and file opening — and the Files header control that uses them, with their suites."
+paths = [
+  "web/src/lib/fleet-editor-links.ts",
+  "web/src/lib/fleet-editor-links.test.ts",
+  "web/src/components/fleet-open-in-editor.tsx",
+  "web/src/components/fleet-open-in-editor.test.tsx"
+]
+contracts = ["only an http loopback address with a port is rewritten, to <editor>/proxy/<port> with its path, query and fragment", "a file opens through the workbench payload on the editor's own authority, a folder through ?folder=", "nothing appears without the editor.url setting or for a crew member's Pane"]
+verify = ["web/src/lib/fleet-editor-links.test.ts", "web/src/components/fleet-open-in-editor.test.tsx", "fleet/settings/document.test.ts"]
+
+[[invasive]]
+id = "editor-preview-links"
+intent = "Open a loopback link from Chat prose or the mirror through the operator's editor — in the preview panel on a plain click — and offer the Files file header's way out to that editor."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = [
+  "web/src/components/markdown-text.tsx#DOWNSTREAM PORT (FORK.toml editor-preview-links)",
+  "web/src/components/ansi-output.tsx#DOWNSTREAM PORT (FORK.toml editor-preview-links)",
+  "web/src/routes/changes.tsx#DOWNSTREAM PORT (FORK.toml editor-preview-links)"
+]
+verify = [
+  "web/src/components/fleet-open-in-editor.test.tsx",
+  "web/src/components/fleet-preview-panel.test.tsx",
+  "web/src/components/markdown-text.test.tsx",
+  "web/src/components/ansi-output.test.tsx",
+  "web/src/routes/changes.test.tsx"
+]
+reason = "Collie's Files view previews text, Markdown, JSON, pictures and script-less HTML only, and a dev server address an agent prints is a loopback link the phone cannot reach. The operator's browser editor previews the rest and proxies loopback ports, so Fleet adds links into it rather than a new read route: no client value becomes a path and ADR 0083's bound is untouched. The decisions live in fork-owned modules — web/src/lib/fleet-editor-links.ts builds the addresses, web/src/lib/fleet-settings.ts reads the editor.url setting once per page, web/src/components/fleet-open-in-editor.tsx draws the header control. The ports: markdown-text.tsx's LinkSpan and ansi-output.tsx's autolinked anchor read the editor address and pass an external href through fleetPreviewHref, which returns it unchanged unless it is an http loopback address with a port, and give the anchor an onClick that hands a plain click on such a link to the preview panel (openLoopbackInPreview, which does nothing unless the panel is mounted and an editor is set); routes/changes.tsx computes the Files root it already holds and renders FleetOpenInEditor in the sticky file header. Upstream unaware as of v1.22.6."
+
+[[owned]]
+id = "files-media"
+intent = "Hold the bridge's bounded byte read for a PDF, a video and an audio file under the Files root, with its suite."
+paths = ["bridge/fleet-files-media.ts", "bridge/fleet-files-media.test.ts"]
+contracts = ["the media read runs the picture read's own root, shape, containment, deny and no-follow checks through the exported Files functions", "the type comes off the bytes only; pictures (AVIF, HEIF) and renamed text are refused", "64 MiB bound, no-store, opaque-origin policy"]
+verify = ["bridge/fleet-files-media.test.ts", "bridge/files-view.test.ts"]
+
+[[invasive]]
+id = "files-media-port"
+intent = "Let the Files picture read answer `?as=media` with the fork's PDF, video and audio read, under the same checks, and serve the PDF.js worker's `.mjs` as JavaScript."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = [
+  "bridge/files-view.ts#DOWNSTREAM PORT (FORK.toml files-media-port)",
+  "bridge/server.ts#DOWNSTREAM PORT (FORK.toml files-media-port)"
+]
+verify = ["bridge/fleet-files-media.test.ts", "bridge/files-view.test.ts"]
+reason = "Collie's Files read serves text as JSON and pictures as bytes (ADR 0090), so a PDF, a video or an audio file an agent wrote ends at 'Binary file'. The fork's reader (bridge/fleet-files-media.ts) must run exactly the checks the picture read runs, so files-view.ts exports Resolved, resolveRoot, checkedTarget and openedFileAllowed — four `export` keywords and no change to their bodies — rather than the fork copying the containment code. server.ts's filesImage answers `?as=media` through the fork's reader after the same root lookup and gate (`device-read`), so the route, its crew forwarding and its pairing rule are upstream's own; an older member ignores the parameter and answers the picture read's 415. The same file's static CONTENT_TYPES gains `.mjs` (text/javascript): the PDF.js worker (web/src/components/fleet-pdf-view.tsx) is emitted as `.mjs`, Collie's own COMPRESSIBLE_EXT already lists that extension, and under `nosniff` a module worker served without a JavaScript type is refused. This departs from ADR 0090's 'a raster picture is served by its own read' only by adding a second answer to that read, as the ADR itself added one to ADR 0083's. Upstream unaware as of v1.22.6."
+
+[[owned]]
+id = "preview-panel"
+intent = "Hold the preview panel — its store, its Screen and Browser tabs, the Files media and scripted-HTML previews — with their suites. The Gateway half lives under fleet/preview/."
+paths = [
+  "web/src/lib/fleet-preview.ts",
+  "web/src/lib/fleet-preview.test.ts",
+  "web/src/components/fleet-preview-panel.tsx",
+  "web/src/components/fleet-preview-panel.test.tsx",
+  "web/src/components/fleet-file-media.tsx",
+  "web/src/components/fleet-file-media.test.tsx",
+  "web/src/components/fleet-pdf-view.tsx"
+]
+contracts = ["a loopback link or a Chat picture opens the panel only on a plain click while the panel is on the page", "the Browser tab frames nothing but the editor's proxy of a loopback address", "a scripted HTML file runs only in the Gateway's opaque-origin document", "media bytes become this page's own object URLs"]
+verify = ["web/src/lib/fleet-preview.test.ts", "web/src/components/fleet-preview-panel.test.tsx", "web/src/components/fleet-file-media.test.tsx", "fleet/preview/preview.test.ts"]
+
+[[invasive]]
+id = "preview-panel-ports"
+intent = "Draw a PDF, a video and an audio file in Files, and let an HTML file run its scripts in the Gateway's sandboxed document."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = ["web/src/components/file-preview.tsx#DOWNSTREAM PORT (FORK.toml preview-panel-ports)"]
+verify = ["web/src/components/file-preview.test.tsx", "web/src/components/fleet-file-media.test.tsx"]
+reason = "FileContent is Collie's and decides what a file reads as. Two ports: before the binary line, a file whose name a media read may serve (and that is binary, or named .pdf) is handed to the fork's FleetFileMedia with the screen's own binary line or Source as its fallback; the html preview kind wraps Collie's own HtmlPreview in the fork's FleetHtmlPreview, which keeps that script-less frame and adds a Run scripts switch for the lead's own Panes. Both render Collie's original output wherever no route names a Files subject, so Collie's own preview suite is unchanged. Upstream unaware as of v1.22.6."

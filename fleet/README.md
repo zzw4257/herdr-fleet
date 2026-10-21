@@ -481,7 +481,7 @@ ships bound is a prefix binding, because a direct chord is best-effort — a bro
 may take it first — while a prefix sequence's second chord is a plain key nothing else listens for.
 
 Commands that ship unbound stay listed, searchable and bindable: the whole-hierarchy and Agent walks,
-the Agent ordinals, `last-pane`, `copy-fleet-pane-link`, `toggle-type-mode`, the eight fixed key
+the Agent ordinals, `last-pane`, `copy-fleet-pane-link`, `open-pane-in-editor`, `toggle-type-mode`, the eight fixed key
 sends and the nine launcher Tabs. No `Alt` chord is a default.
 
 `create-tab` opens a shell Tab in the current Space, from a Pane or from a Space page.
@@ -560,6 +560,30 @@ fire. A chord only SOME browsers keep is accepted and marked browser-dependent i
 Settings edits the same document in a text area and validates it identically. It sends back the
 version it read, so a save cannot silently overwrite a change made on disk: the mismatch is refused
 and the current document is handed back.
+
+### The browser editor
+
+`"editor": { "url": "https://code.example.com" }` names a browser editor that serves this machine's
+files and proxies its loopback ports (code-server's `/proxy/<port>/` and `?folder=` contract). With it
+set, a `http://localhost:<port>` link in Chat or the mirror opens through `<url>/proxy/<port>/…`, the
+Files header offers **Open in editor** for the file on screen — the way to a PDF, a video or an HTML
+page that needs its script — and `open-pane-in-editor` opens the current Pane's folder. A Pane on
+another crew host gets no editor link. The address must be http(s) with no credentials, query or
+fragment; Fleet never contacts it, and the editor's own sign-in and front door stay the operator's.
+
+### The preview panel
+
+`toggle-preview-panel` (`Prefix+O`) opens a panel beside the route on a wide screen and over it on a
+phone. **Screen** follows the current Pane's newest screenshot from its Chat window — a computer-use
+or browser step as it happens — or a picture tapped in Chat. **Browser** frames a loopback address
+through the editor's port proxy; a plain click on a `localhost:<port>` link in Chat or the mirror
+opens it there, and a frame on any other site is refused. In Files a video or an audio file plays in
+place and a PDF is drawn in place by PDF.js, page by page as it scrolls into view (bytes from a
+64 MiB media read under the Files rules),
+and an HTML file can **Run scripts** in a Gateway document whose policy starts `sandbox
+allow-scripts`: an opaque origin with no cookie, storage or same-origin request, and no files from
+beside it. The Gateway adds `blob:` frames and media, same-origin frames and the editor's origin as a
+frame to Collie's page policy, and nothing to `script-src`, `connect-src` or `object-src`.
 
 ## Pane surfaces
 

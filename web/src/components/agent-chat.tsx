@@ -22,6 +22,7 @@ import { useNoPromptsGuard } from "@/hooks/use-no-prompts-guard";
 import { buzz } from "@/lib/haptics";
 import { handOf, mirrorFont, useDisplayPrefs } from "@/hooks/use-display-prefs";
 import { useChatWindow } from "@/hooks/use-chat-window";
+import { useFleetScreenFeed } from "@/lib/fleet-preview";
 import { useChatReady } from "@/hooks/use-chat-ready";
 import { usePaneStart } from "@/hooks/use-pane-start";
 import { useHandover, useHeldBody } from "@/hooks/use-handover";
@@ -1067,6 +1068,9 @@ export function AgentChat({
   // `savedCopy`: when the loaders drew the mirror from the saved copy, an empty Chat window reads its
   // own saved copy at once rather than waiting for its read to fail (M46 pass 3).
   const chatFeed = useChatWindow({ paneId, scope, enabled: chatFetch || warming, savedCopy: stale });
+  // DOWNSTREAM PORT (FORK.toml native-pane-page-port, for preview-panel): the preview's Screen tab follows
+  // this window's newest picture.
+  useFleetScreenFeed(paneId, scope, chatFeed.window.entries);
   const chatStatus = chatFeed.window.status;
   const journal: JournalReading = journalReadingOf(chatStatus);
   // What this view has seen of how the agent began, for the gate (hooks/use-pane-start.ts): the

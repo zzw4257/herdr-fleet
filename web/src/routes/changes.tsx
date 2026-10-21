@@ -13,6 +13,7 @@ import {
   useFilesFilter,
 } from "@/components/files-view";
 import { FileContent, defaultView, type FileImages, type FileLinks, type FileView } from "@/components/file-preview";
+import { FleetOpenInEditor } from "@/components/fleet-open-in-editor";
 import { CleanRepos, CommitHead } from "@/components/changes-commit";
 import { dropHeldImages, heldImage, imageSubject } from "@/lib/file-image-cache";
 import {
@@ -1530,6 +1531,7 @@ function TreeFileScreen({
   useLocale();
   const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
   const size = read.phase === "ready" && read.data.available && "size" in read.data ? read.data.size : null;
+  const root = read.phase === "ready" && read.data.available ? read.data.root : null;
   let body: React.ReactNode;
   if (waiting) body = <FilesLoading />;
   else if (view === "diff") body = <FileBody state={diff} />;
@@ -1574,6 +1576,8 @@ function TreeFileScreen({
           <span className={cn("shrink-0 text-xs text-muted-foreground tabular-nums", views.length >= 3 && "hidden sm:inline")}>
             {size === null ? "" : formatBytes(size)}
           </span>
+          {/* DOWNSTREAM PORT (FORK.toml editor-preview-links): previews Files cannot draw open in the editor. */}
+          <FleetOpenInEditor root={root} path={path} />
           {!waiting && views.length > 1 && (
             <Segmented
               label={t("files.view.aria")}

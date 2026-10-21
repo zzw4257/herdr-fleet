@@ -23,6 +23,8 @@ import {
 import type { FleetLeadConfig } from "./config.ts";
 import { LOGIN_CSS, loginPage } from "./login-ui.ts";
 import { proxyCollie, type FleetFetcher } from "./proxy.ts";
+import { FLEET_PREVIEW_HTML_PATH, previewHtmlResponse } from "./preview/html-route.ts";
+import { allowPreviews } from "./preview/policy.ts";
 import { LoginRateLimiter } from "./rate-limit.ts";
 import type { SessionStore } from "./session-store.ts";
 import { TAGS_PATH } from "./pane-tags/document.ts";
@@ -84,6 +86,7 @@ function isApiPath(pathname: string): boolean {
   if (pathname === "/api" || pathname.startsWith("/api/")) return true;
   if (pathname.startsWith(TODOIST_API + "/")) return true;
   if (isPaneFitPath(pathname)) return true;
+  if (pathname === FLEET_PREVIEW_HTML_PATH) return true;
   return pathname === VIEW_STATE_PATH || pathname === TAGS_PATH || pathname === FLEET_SETTINGS_PATH || pathname === TERMINAL_PATH;
 }
 
@@ -454,6 +457,22 @@ export function createGatewayHandler(options: GatewayOptions) {
       return json({ error: "method not allowed" }, 405);
     }
 
+    // THE PREVIEW PANEL'S SCRIPTED HTML (fleet/preview/html-route.ts): Collie's own Files read of one
+    // file, answered as an opaque-origin document. It carries its own frame policy, so the base
+    // headers' DENY is not laid over it; every other base header is.
+    if (url.pathname === FLEET_PREVIEW_HTML_PATH) {
+      let answer: Response;
+      try {
+        answer = await previewHtmlResponse(request, url, (path) =>
+          proxyCollie(new Request(new URL(path, request.url), { headers: request.headers }), config, fetcher, collieToken),
+        );
+      } catch {
+        return text("upstream unavailable\n", 502);
+      }
+      for (const [name, value] of Object.entries(BASE_HEADERS)) if (!answer.headers.has(name)) answer.headers.set(name, value);
+      return answer;
+    }
+
     // THE TERMINAL BOUNDARY. Above the proxy for a mechanical reason as well as a logical one:
     // `proxyCollie` strips `upgrade` as a hop-by-hop header, so a terminal request that reached it
     // would arrive at Collie as an ordinary GET and be answered as one. It is also the only route
@@ -481,7 +500,10 @@ export function createGatewayHandler(options: GatewayOptions) {
     }
 
     try {
-      return withBaseHeaders(await proxyCollie(request, config, fetcher, collieToken));
+      const proxied = await proxyCollie(request, config, fetcher, collieToken);
+      // The preview panel's frames and media (fleet/preview/policy.ts), on an HTML document only.
+      await allowPreviews(proxied.headers, settings);
+      return withBaseHeaders(proxied);
     } catch {
       return isApiPath(url.pathname)
         ? json({ error: "upstream unavailable" }, 502)
