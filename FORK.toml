@@ -68,6 +68,8 @@ paths = [
   "web/src/components/fleet-panel-tile.test.tsx",
   "web/src/components/fleet-view-experience.tsx",
   "web/src/components/fleet-view-experience.test.tsx",
+  "web/src/lib/fleet-navigation-attention.ts",
+  "web/src/lib/fleet-navigation-attention.test.ts",
   "web/src/lib/fleet-view-state.ts",
   "web/src/lib/fleet-view-state.test.ts",
   "web/src/lib/fleet-panel-inventory.ts",

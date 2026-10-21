@@ -20,7 +20,10 @@ import {
   deriveNavigationTree,
   hostFaultSinks,
   type NavigationHostFault,
+  type NavigationAttention,
   type NavigationPaneInput,
+  type NavigationTabInput,
+  type NavigationWorkspaceInput,
   type NavigationSubject,
 } from "../../../fleet/ui/native-navigation/model.ts";
 import {
@@ -31,7 +34,8 @@ import {
   type NativeNavigationPreferenceStore,
   type SidebarSide,
 } from "../../../fleet/ui/native-navigation/preferences.ts";
-import { COMMAND_ORDINALS, type CommandId, type CommandScope } from "../../../fleet/ui/commands/catalog.ts";
+import { COMMAND_ORDINALS, commandById, type CommandId, type CommandScope } from "../../../fleet/ui/commands/catalog.ts";
+import { refuseCommand } from "../../../fleet/ui/commands/refusal.ts";
 import {
   EMPTY_PANE_HISTORY,
   hierarchyPaneOrder,
@@ -42,6 +46,7 @@ import {
   stepTabInSpace,
   swapPaneHistory,
   tabOrdinalInSpace,
+  tabsWithPanes,
   visitPane,
   type PaneHistory,
 } from "../../../fleet/ui/commands/targets.ts";
@@ -72,6 +77,7 @@ import { closePane, closeTab } from "@/lib/api";
 import { describeApiError, describeThrownError } from "@/lib/api-error-message";
 import { migrateLegacyFavorites, paneRosterFrom, pinnedAgents } from "@/lib/fleet-roster";
 import { markPanesSeen } from "@/lib/fleet-mark-seen";
+import { attentionByPlace, paneAttention, tabAttentionKey } from "@/lib/fleet-navigation-attention";
 import { usePins } from "@/lib/pins";
 import { setStatus } from "@/lib/status";
 import { useFleetSettings } from "@/lib/fleet-settings";
@@ -80,6 +86,7 @@ import { triage } from "@/lib/triage";
 import { usePairing } from "@/lib/pairing";
 import { useNav } from "@/hooks/use-nav";
 import { useSpaceActions } from "@/hooks/use-spaces";
+import { useLaunchers } from "@/lib/launchers";
 import { paneName } from "@/lib/pane-name";
 import { isReadOnly, type AgentView } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -223,6 +230,8 @@ function FleetNavigationShell({
         hosts: hostIds.map((hostId) => {
           const on = <T extends { host?: string }>(rows: readonly T[]): T[] =>
             hostId === "" ? [...rows] : rows.filter((row) => (row.host ?? "") === hostId);
+          // Per member: workspace and tab ids repeat across machines.
+          const places = attentionByPlace(on(data.agents));
           return {
             hostId,
             // Naming a host is Collie's job; its resolver falls back to the id, and a solo snapshot
@@ -234,8 +243,12 @@ function FleetNavigationShell({
               answering: !hostFaultSinks(hostFaults.get(hostId)),
               lead: data.fleetVersions?.lead ?? null,
             }),
-            workspaces: on(data.allWorkspaces ?? data.workspaces),
-            tabs: on(data.allTabs ?? data.tabs),
+            workspaces: on(data.allWorkspaces ?? data.workspaces).map((workspace) =>
+              toNavigationWorkspace(workspace, places.spaces.get(workspace.workspaceId)),
+            ),
+            tabs: on(data.allTabs ?? data.tabs).map((tab) =>
+              toNavigationTab(tab, places.tabs.get(tabAttentionKey(tab.workspaceId, tab.tabId))),
+            ),
             agents: on(data.agents).map(toNavigationPane),
             shellPanes: on(data.shellPanes).map(toNavigationPane),
           };
@@ -264,7 +277,9 @@ function FleetNavigationShell({
   // and — the one that actually made the command look broken — the fresh Pane handed to the route
   // through navigation state. Without that last piece the new Pane is not in the snapshot yet, so
   // the page it lands on reports an Agent that is gone.
-  const { newTab } = useSpaceActions();
+  const { newTab, launch } = useSpaceActions();
+  // The page's own host's launcher rows, in `launchers.toml` order: what `new-tab-launcher-N` starts.
+  const { launchers } = useLaunchers(data.scope);
   // The operator's own bindings and prefix. Absent, unserved or unreadable answers the shipped
   // defaults, so this can never leave the keyboard with nothing bound.
   const fleetSettings = useFleetSettings();
@@ -425,6 +440,9 @@ function FleetNavigationShell({
   // operator is actually on, and on a pack that Space may not be the one the URL's scope narrows to.
   const tabsForCommands = data.allTabs ?? data.tabs;
   const currentPane = allPanes.find((pane) => pane.paneId === paneId);
+  // The Tabs the hierarchy draws: cycling and the ordinals count these, so a key never lands on an
+  // empty Tab and `select-tab-2` is the second row the rail shows.
+  const visibleTabs = useMemo(() => tabsWithPanes(tabsForCommands, allPanes), [tabsForCommands, allPanes]);
   const hierarchyOrder = useMemo(() => hierarchyPaneOrder(tree), [tree]);
 
   // The two-entry history behind `last-pane`, kept for the page session only.
@@ -524,35 +542,52 @@ function FleetNavigationShell({
           await navigator.clipboard.writeText(new URL(path, globalThis.location.origin).toString());
         },
         "next-tab": () => {
-          const tab = stepTabInSpace(tabsForCommands, currentPane, 1);
+          const tab = stepTabInSpace(visibleTabs, currentPane, 1);
           if (tab !== null) open(paneForTab(allPanes, tab));
         },
         "previous-tab": () => {
-          const tab = stepTabInSpace(tabsForCommands, currentPane, -1);
+          const tab = stepTabInSpace(visibleTabs, currentPane, -1);
           if (tab !== null) open(paneForTab(allPanes, tab));
         },
         "next-pane-in-tab": () => open(stepPaneInTab(allPanes, currentPane, 1)),
         "previous-pane-in-tab": () => open(stepPaneInTab(allPanes, currentPane, -1)),
       } satisfies CommandAdapters);
+    } else if (spaceId !== undefined) {
+      // A Space page has no current Pane, but it has a current Space, and that is all a new Tab needs.
+      built["create-tab"] = () => newTab(spaceId);
     }
+    // The Pane a launched Tab opens beside: the current one, or on a Space page that Space's first.
+    const besidePane = currentPane ?? allPanes.find((pane) => pane.workspaceId === spaceId);
     for (const ordinal of COMMAND_ORDINALS) {
       const tabId: CommandId = `select-tab-${ordinal}`;
       const agentId: CommandId = `select-agent-${ordinal}`;
+      const launcherId: CommandId = `new-tab-launcher-${ordinal}`;
       built[tabId] = () => {
         if (currentPane === undefined) return;
-        const tab = tabOrdinalInSpace(tabsForCommands, currentPane, ordinal);
+        const tab = tabOrdinalInSpace(visibleTabs, currentPane, ordinal);
         if (tab !== null) open(paneForTab(allPanes, tab, currentPane.paneId));
       };
       built[agentId] = () => open(rosterOrdinal(roster.entries, ordinal));
+      built[launcherId] = async () => {
+        const row = launchers[ordinal - 1];
+        if (row === undefined || besidePane === undefined) {
+          refuseCommand(ft("fleet.command.unavailable", { name: commandById(launcherId).name }));
+        }
+        await launch(row.command, besidePane.paneId);
+      };
     }
     return built;
   }, [
     navigate,
     newTab,
+    launch,
+    launchers,
+    spaceId,
     data.scope,
     data.servers,
     data.sessions,
     tabsForCommands,
+    visibleTabs,
     allPanes,
     hierarchyOrder,
     currentPane,
@@ -779,6 +814,24 @@ function FleetNavigationShell({
   );
 }
 
+function toNavigationWorkspace(
+  workspace: { workspaceId: string; label: string },
+  attention: NavigationAttention | undefined,
+): NavigationWorkspaceInput {
+  const result: NavigationWorkspaceInput = { workspaceId: workspace.workspaceId, label: workspace.label };
+  if (attention !== undefined) result.attention = attention;
+  return result;
+}
+
+function toNavigationTab(
+  tab: { tabId: string; workspaceId: string; label: string },
+  attention: NavigationAttention | undefined,
+): NavigationTabInput {
+  const result: NavigationTabInput = { tabId: tab.tabId, workspaceId: tab.workspaceId, label: tab.label };
+  if (attention !== undefined) result.attention = attention;
+  return result;
+}
+
 function toNavigationPane(pane: AgentView): NavigationPaneInput {
   const result: NavigationPaneInput = {
     paneId: pane.paneId,
@@ -793,6 +846,8 @@ function toNavigationPane(pane: AgentView): NavigationPaneInput {
   if (pane.paneLabel) result.ownLabel = pane.paneLabel;
   if (pane.status) result.status = pane.status;
   if (pane.kind) result.kind = pane.kind;
+  const attention = pane.kind === "shell" ? undefined : paneAttention(pane);
+  if (attention !== undefined) result.attention = attention;
   return result;
 }
 

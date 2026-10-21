@@ -93,7 +93,7 @@ const FleetCommandsContext = createContext<FleetCommandsValue | null>(null);
  * flip, a key sent into a terminal, a link on the clipboard — and those say so.
  */
 function isSelfEvident(id: CommandId): boolean {
-  if (id.startsWith("select-tab-") || id.startsWith("select-agent-")) return true;
+  if (id.startsWith("select-tab-") || id.startsWith("select-agent-") || id.startsWith("new-tab-launcher-")) return true;
   return (
     id === "open-command-bar" ||
     id === "open-pane-switcher" ||
@@ -129,7 +129,7 @@ function isSelfEvident(id: CommandId): boolean {
  * closed is not the pane the app falls back to.
  */
 function movesPane(id: CommandId): boolean {
-  if (id.startsWith("select-tab-") || id.startsWith("select-agent-")) return true;
+  if (id.startsWith("select-tab-") || id.startsWith("select-agent-") || id.startsWith("new-tab-launcher-")) return true;
   return (
     id === "create-tab" ||
     id === "next-tab" ||

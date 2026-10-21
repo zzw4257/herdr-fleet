@@ -12,6 +12,7 @@ import {
   swapPaneHistory,
   tabOrdinalInSpace,
   tabsInSpace,
+  tabsWithPanes,
   visitPane,
   type PaneTarget,
   type TabTarget,
@@ -53,6 +54,15 @@ describe("tabs stay inside their Space and their machine", () => {
     expect(tabOrdinalInSpace(TABS, { workspaceId: "w1" }, 2)?.tabId).toBe("t2");
     expect(tabOrdinalInSpace(TABS, { workspaceId: "w1" }, 3)).toBeNull();
     expect(tabOrdinalInSpace(TABS, { workspaceId: "w1" }, 0)).toBeNull();
+  });
+
+  test("a Tab holding no Pane is skipped by cycling and by the ordinals", () => {
+    // t4 sits between t1 and t2 and holds nothing, so the rail does not draw it either.
+    const tabs = [tab("t1", "w1"), tab("t4", "w1"), tab("t2", "w1"), tab("t1", "w1", "peer")];
+    const visible = tabsWithPanes(tabs, PANES);
+    expect(visible.map((x) => `${x.tabId}${x.host ? `@${x.host}` : ""}`)).toEqual(["t1", "t2", "t1@peer"]);
+    expect(stepTabInSpace(visible, { workspaceId: "w1", tabId: "t1" }, 1)?.tabId).toBe("t2");
+    expect(tabOrdinalInSpace(visible, { workspaceId: "w1" }, 2)?.tabId).toBe("t2");
   });
 });
 

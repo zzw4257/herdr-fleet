@@ -6,15 +6,27 @@ export const MAX_NAVIGATION_TABS = 512;
 export const MAX_NAVIGATION_PANES = 2048;
 export const MAX_NAVIGATION_ID_LENGTH = 256;
 
+/**
+ * The triage bucket a row advertises, resolved by the caller with Collie's own triage
+ * (`web/src/lib/triage.ts`): blocked on the operator, finished and unseen, or working. A resting set
+ * or an empty one is absent rather than a fourth value, so a quiet folder draws nothing. This module
+ * carries the answer and never ranks one, for the same reason `hostLabel` arrives resolved.
+ */
+export type NavigationAttention = "needs" | "ready" | "working";
+
 export interface NavigationWorkspaceInput {
   workspaceId: string;
   label: string;
+  /** The most urgent bucket among this Space's Agents; drawn on the row while it is collapsed. */
+  attention?: NavigationAttention;
 }
 
 export interface NavigationTabInput {
   tabId: string;
   workspaceId: string;
   label: string;
+  /** The most urgent bucket among this Tab's Agents; drawn on a group row while it is collapsed. */
+  attention?: NavigationAttention;
 }
 
 export interface NavigationPaneInput {
@@ -38,6 +50,8 @@ export interface NavigationPaneInput {
   ownLabel?: string;
   agent: string;
   status?: NavigationStatus;
+  /** This Pane's own bucket; `ready` makes its row draw the unseen mark in place of the dot. */
+  attention?: NavigationAttention;
   kind?: "agent" | "shell";
 }
 
@@ -124,6 +138,11 @@ export interface NavigationRow {
   version?: HostVersionEvidence;
   /** The Pane state this row stands for, when it stands for a Pane. */
   status?: NavigationStatus;
+  /**
+   * The bucket this row advertises: a Pane's own, or the most urgent inside a Space or group row.
+   * The tree draws a folder's only while it is collapsed.
+   */
+  attention?: NavigationAttention;
   /**
    * Browser-local disclosure identity. Present exactly when the row has children, so a leaf can
    * never occupy a disclosure slot and an elided level can never leave one behind.
@@ -232,6 +251,7 @@ function paneRow(pane: NavigationPaneInput, selected: boolean, hostId: string): 
   };
   if (pane.kind !== "shell") row.agent = pane.agent;
   if (pane.status) row.status = pane.status;
+  if (pane.attention) row.attention = pane.attention;
   return row;
 }
 
@@ -368,17 +388,17 @@ function hostRow(
 
       if (elideTabLevel) return paneRows;
 
-      return [
-        {
-          key: `tab:${workspace.workspaceId}:${entry.tab.tabId}${hostSuffix(hostId)}`,
-          label: entry.tab.label,
-          icon: "group",
-          disclosureId: tabId,
-          subject: { kind: "tab", tabId: entry.tab.tabId },
-          selected: false,
-          children: paneRows,
-        },
-      ];
+      const group: NavigationRow = {
+        key: `tab:${workspace.workspaceId}:${entry.tab.tabId}${hostSuffix(hostId)}`,
+        label: entry.tab.label,
+        icon: "group",
+        disclosureId: tabId,
+        subject: { kind: "tab", tabId: entry.tab.tabId },
+        selected: false,
+        children: paneRows,
+      };
+      if (entry.tab.attention) group.attention = entry.tab.attention;
+      return [group];
     });
 
     const row: NavigationRow = {
@@ -395,6 +415,7 @@ function hostRow(
       children,
     };
     if (children.length > 0) row.disclosureId = spaceId;
+    if (workspace.attention) row.attention = workspace.attention;
     return row;
   });
 

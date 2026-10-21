@@ -481,8 +481,14 @@ ships bound is a prefix binding, because a direct chord is best-effort — a bro
 may take it first — while a prefix sequence's second chord is a plain key nothing else listens for.
 
 Commands that ship unbound stay listed, searchable and bindable: the whole-hierarchy and Agent walks,
-the Agent ordinals, `last-pane`, `copy-fleet-pane-link`, `toggle-type-mode` and the eight fixed key
-sends. No `Alt` chord is a default.
+the Agent ordinals, `last-pane`, `copy-fleet-pane-link`, `toggle-type-mode`, the eight fixed key
+sends and the nine launcher Tabs. No `Alt` chord is a default.
+
+`create-tab` opens a shell Tab in the current Space, from a Pane or from a Space page.
+`new-tab-launcher-1` … `new-tab-launcher-9` start that host's Nth launcher row (`launchers.toml`, in
+its order) as a new Tab beside the current Pane — on a Space page, beside that Space's first Pane — and
+open it. Bind the rows you use, for example `"new-tab-launcher-1": ["Alt+Shift+C"]`. Tab cycling and
+the Tab ordinals count only Tabs that hold a Pane, the Tabs the hierarchy draws.
 
 Renaming a Tab or a Pane opens an input where the command bar opens, holding the current name
 selected: type, press Enter, done. Closing keeps the row-actions surface, because a close needs the

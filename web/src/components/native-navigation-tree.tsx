@@ -12,6 +12,8 @@ import { nativeNavigationPreferences } from "../../../fleet/ui/native-navigation
 import { AgentIcon } from "@/components/agent-icon";
 import { useCrew } from "@/components/crew-provider";
 import { StatusDot } from "@/components/status-badge";
+import { UnseenMark } from "@/components/ui/unseen-mark";
+import { TRIAGE_STATUS } from "@/lib/triage";
 import { HOST_TEXT_CLASSES, hostSlot } from "@/lib/hosts";
 import { Collapse } from "@/components/ui/collapse";
 import { t } from "@/lib/i18n";
@@ -114,6 +116,26 @@ interface RowProps {
  * glyphs: a `ChevronRight` at 90° is the same drawing at the same size in both states, so nothing
  * shifts by a pixel when a row opens, and the rotation is the disclosure's own motion.
  */
+/**
+ * The trailing mark: a Pane's own state, or what a COLLAPSED folder holds.
+ *
+ * A Pane row draws its dot, or Collie's unseen square when its Agent finished unseen. A Space or group
+ * row draws the most urgent bucket inside it only while it is collapsed — open, its rows already say
+ * it — in the shapes Collie's Tab strip uses for the same buckets (components/tab-strip.tsx).
+ */
+function TrailingMark({ row, open }: { row: NavigationRow; open: boolean }) {
+  const attention = row.status !== undefined || !open ? row.attention : undefined;
+  if (attention === "ready") return <UnseenMark className="ml-auto size-2 shrink-0" />;
+  const status = row.status ?? (attention === undefined ? undefined : TRIAGE_STATUS[attention]);
+  if (status === undefined) return null;
+  return (
+    <>
+      <StatusDot status={status} surface="bg-chrome" className="ml-auto size-2 shrink-0" />
+      <span className="sr-only">{statusLabel(status)}</span>
+    </>
+  );
+}
+
 function Row({
   row,
   disclosed,
@@ -236,12 +258,7 @@ function Row({
                   the SAME dot the Tab row draws (components/tab-strip.tsx), so one colour means one
                   thing wherever it appears. `surface` is the rail's ground, because a resting state
                   is a hollow ring and a ring filled with the wrong colour reads as a notch. */}
-              {row.status !== undefined && (
-                <>
-                  <StatusDot status={row.status} surface="bg-chrome" className="ml-auto size-2 shrink-0" />
-                  <span className="sr-only">{statusLabel(row.status)}</span>
-                </>
-              )}
+              <TrailingMark row={row} open={open} />
             </>
           )}
         </button>

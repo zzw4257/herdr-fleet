@@ -19,8 +19,15 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+### Added
+
+- **A collapsed Space or Tab group shows what is waiting inside it.** The rail trails the most urgent of Collie's buckets — unseen, needs you, working — and a finished, unseen Pane row trails the unseen mark.
+- **Start a launcher row as a new Tab from the keyboard.** `new-tab-launcher-1` … `new-tab-launcher-9` open the host's Nth launcher beside the current Pane; unbound by default.
+
 ### Fixed
 
+- **Create Tab works on a Space page.** It used to report unavailable there.
+- **Tab cycling and Tab ordinals skip Tabs with no Pane.** They count the Tabs the rail draws.
 - **Codex Desktop sessions show their transcript.** A paginated thread's segment-named rollout is now found instead of "No transcript file was found".
 
 ## [3.19.0] - 2026-10-19

@@ -47,6 +47,7 @@ export type CommandId =
   | "next-tab"
   | "previous-tab"
   | `select-tab-${CommandOrdinal}`
+  | `new-tab-launcher-${CommandOrdinal}`
   | "rename-tab"
   | "close-tab"
   | "next-pane-in-tab"
@@ -124,6 +125,18 @@ const DEFINITIONS: readonly CommandDefinition[] = [
       name: `Select Tab ${n}`,
       scope: "tab",
       defaults: [`Prefix+${n}`],
+    }),
+  ),
+  // A new Tab that starts an Agent: the Nth row of the host's own launcher list, beside the current
+  // Pane, through Collie's launch-beside flow. The id carries only the ordinal; which command that
+  // row runs is read from the host at invocation, so no command line ever travels in a binding.
+  // Unbound, because which key starts which program is the operator's choice.
+  ...COMMAND_ORDINALS.map(
+    (n): CommandDefinition => ({
+      id: `new-tab-launcher-${n}`,
+      name: `New Tab with Launcher ${n}`,
+      scope: "space",
+      defaults: [],
     }),
   ),
   { id: "rename-tab", name: "Rename Tab", scope: "tab", defaults: ["Prefix+Shift+T"] },

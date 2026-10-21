@@ -54,6 +54,18 @@ export function tabsInSpace(
   return tabs.filter((tab) => tab.workspaceId === workspaceId && sameHost(tab.host, host));
 }
 
+/**
+ * The Tabs that hold at least one Pane — the Tabs the hierarchy draws, and so the ones the Tab
+ * commands count. A Tab with nothing in it would make `next-tab` land on nothing and shift every
+ * ordinal past it away from what the rail shows.
+ */
+export function tabsWithPanes(
+  tabs: readonly TabTarget[],
+  panes: readonly PaneTarget[],
+): readonly TabTarget[] {
+  return tabs.filter((tab) => panes.some((pane) => pane.tabId === tab.tabId && sameHost(pane.host, tab.host)));
+}
+
 /** The Panes of one Tab on one machine, in the order they arrived. */
 export function panesInTab(
   panes: readonly PaneTarget[],

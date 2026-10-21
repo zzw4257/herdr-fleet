@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
@@ -351,4 +351,59 @@ it("opens Host actions on an empty machine without navigation", () => {
   expect(onRowActions).toHaveBeenCalledExactlyOnceWith({ kind: "host", hostId: "example-peer", label: "Example peer" });
   expect(onOpenSpace).not.toHaveBeenCalled();
   expect(onOpenPane).not.toHaveBeenCalled();
+});
+
+describe("NativeNavigationTree folder marks", () => {
+  function marked() {
+    return deriveNavigationTree({
+      hosts: [{
+        hostId: "",
+        hostLabel: "This host",
+        workspaces: [
+          { workspaceId: "w1", label: "Busy", attention: "ready" },
+          { workspaceId: "w2", label: "Working", attention: "working" },
+          { workspaceId: "w3", label: "Resting" },
+        ],
+        tabs: [
+          { workspaceId: "w1", tabId: "t1", label: "Main" },
+          { workspaceId: "w2", tabId: "t2", label: "Run" },
+          { workspaceId: "w3", tabId: "t3", label: "Idle" },
+        ],
+        agents: [
+          { workspaceId: "w1", tabId: "t1", paneId: "p1", label: "Finished", agent: "claude", status: "idle", attention: "ready" },
+          { workspaceId: "w1", tabId: "t1", paneId: "p2", label: "Quiet", agent: "codex", status: "idle" },
+          { workspaceId: "w2", tabId: "t2", paneId: "p3", label: "Busy pane", agent: "claude", status: "working", attention: "working" },
+          { workspaceId: "w3", tabId: "t3", paneId: "p4", label: "Resting pane", agent: "claude", status: "idle" },
+        ],
+        shellPanes: [],
+      }],
+    });
+  }
+
+  it("marks a collapsed Space with its most urgent bucket and drops the mark when it opens", async () => {
+    const user = userEvent.setup();
+    render(
+      <NativeNavigationTree tree={marked()} onOpenSpace={vi.fn()} onOpenPane={vi.fn()} preferenceStore={new NavigationPreferenceStore()} />,
+    );
+
+    const busy = screen.getByRole("button", { name: /^Busy/ });
+    expect(within(busy).getByRole("img", { name: "unseen" })).toBeInTheDocument();
+    expect(within(screen.getByRole("button", { name: /^Working/ })).getByText("working")).toBeInTheDocument();
+    const resting = screen.getByRole("button", { name: /^Resting/ });
+    expect(within(resting).queryByRole("img")).toBeNull();
+    expect(resting).toHaveAccessibleName("Resting");
+
+    await user.click(busy);
+    expect(within(screen.getByRole("button", { name: /^Busy/ })).queryByRole("img", { name: "unseen" })).toBeNull();
+  });
+
+  it("draws the unseen mark in a finished Pane's dot slot", () => {
+    const store = new NavigationPreferenceStore();
+    store.ensureDisclosed([spaceDisclosureId("w1")]);
+    render(<NativeNavigationTree tree={marked()} onOpenSpace={vi.fn()} onOpenPane={vi.fn()} preferenceStore={store} />);
+
+    expect(within(screen.getByRole("button", { name: /^Finished/ })).getByRole("img", { name: "unseen" })).toBeInTheDocument();
+    const quiet = screen.getByRole("button", { name: /^Quiet/ });
+    expect(within(quiet).queryByRole("img", { name: "unseen" })).toBeNull();
+  });
 });

@@ -193,6 +193,39 @@ describe("native navigation hierarchy", () => {
     expect(tree.rows[0]?.children[0]?.icon).toBe("none");
   });
 
+  test("carries resolved attention onto Space, group and Pane rows, and adds none of its own", () => {
+    const tree = singleHost({
+      ...HOST,
+      workspaces: [
+        { workspaceId: "w1", label: "Busy", attention: "ready" },
+        { workspaceId: "w2", label: "Quiet" },
+      ],
+      tabs: [
+        { workspaceId: "w1", tabId: "t1", label: "Pair", attention: "working" },
+        { workspaceId: "w1", tabId: "t2", label: "Single" },
+        { workspaceId: "w2", tabId: "t3", label: "Rest" },
+      ],
+      agents: [
+        { workspaceId: "w1", tabId: "t1", paneId: "p1", label: "A", agent: "claude", status: "working", attention: "working" },
+        { workspaceId: "w1", tabId: "t1", paneId: "p2", label: "B", agent: "codex", status: "idle" },
+        { workspaceId: "w1", tabId: "t2", paneId: "p3", label: "C", agent: "claude", status: "idle", attention: "ready" },
+        { workspaceId: "w2", tabId: "t3", paneId: "p4", label: "D", agent: "claude", status: "idle" },
+      ],
+      shellPanes: [],
+    });
+
+    const [busy, quiet] = tree.rows[0]?.children ?? [];
+    expect(busy?.attention).toBe("ready");
+    const [pair, single] = busy?.children ?? [];
+    expect(pair).toMatchObject({ icon: "group", attention: "working" });
+    expect(pair?.children[0]?.attention).toBe("working");
+    expect(pair?.children[1]?.attention).toBeUndefined();
+    // A one-Pane Tab is the Pane's own row, so it carries the Pane's bucket rather than the Tab's.
+    expect(single).toMatchObject({ icon: "agent", attention: "ready" });
+    expect(quiet?.attention).toBeUndefined();
+    expect(quiet?.children[0]?.attention).toBeUndefined();
+  });
+
   test("drops orphaned, invalid and empty rows and leaves an empty Space openable", () => {
     const tree = singleHost({
       ...HOST,
