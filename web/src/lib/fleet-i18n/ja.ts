@@ -200,6 +200,7 @@ export const ja: FleetDictionary = {
   "fleet.command.mic.alreadyRecording": "マイクはすでに録音中です。",
   "fleet.command.mic.notRecording": "マイクは録音していません。",
   "fleet.command.unavailable": "{name} はここでは使えません。",
+  "fleet.chat.imageAlt": "セッションの画像",
   "fleet.command.failed": "{name} は完了しませんでした。",
   "fleet.rename.tab": "タブの名前を変更",
   "fleet.rename.pane": "ペインの名前を変更",

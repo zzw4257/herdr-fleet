@@ -57,6 +57,7 @@ import { isPlainClick, useFileLinks } from "@/components/file-links";
 import { MarkdownText } from "@/components/markdown-text";
 import { MIRROR_INVERT, MIRROR_SPACE } from "@/components/mirror-space";
 import { StatusDot } from "@/components/status-badge";
+import { FleetChatImage } from "@/components/fleet-chat-image";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Collapse } from "@/components/ui/collapse";
@@ -336,6 +337,9 @@ export const ItemView = memo(function ItemView({ item }: { item: ChatItem }) {
       );
     case "notice":
       return <Notice item={item} />;
+    // DOWNSTREAM PORT (FORK.toml journal-image-port): a picture, drawn by the fork's own card.
+    case "image":
+      return <FleetChatImage url={item.url} />;
     case "compacted":
       return <Compacted item={item} />;
     case "tool":

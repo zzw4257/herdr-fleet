@@ -66,9 +66,10 @@ describe("itemsOf", () => {
     expect(itemsOf(entry({ parts: [toolPart()] }))[0]!.id).toBe("u1:0");
   });
 
-  it("names an image in a notice rather than dropping the part", () => {
+  // DOWNSTREAM PORT (FORK.toml journal-image-port): a picture is an image block, not a notice.
+  it("keeps an image as an image block rather than dropping the part", () => {
     const [item] = itemsOf(entry({ parts: [{ kind: "image", url: "/api/image/7" }] }));
-    expect(item).toMatchObject({ kind: "notice", text: "Image: /api/image/7" });
+    expect(item).toMatchObject({ kind: "image", url: "/api/image/7" });
   });
 
   it("carries a turn's timestamp onto every block, and drops an empty one", () => {

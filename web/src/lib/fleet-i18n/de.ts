@@ -200,6 +200,7 @@ export const de: FleetDictionary = {
   "fleet.command.mic.alreadyRecording": "Das Mikrofon nimmt bereits auf.",
   "fleet.command.mic.notRecording": "Das Mikrofon nimmt nicht auf.",
   "fleet.command.unavailable": "{name} ist hier nicht verfügbar.",
+  "fleet.chat.imageAlt": "Bild aus der Sitzung",
   "fleet.command.failed": "{name} wurde nicht abgeschlossen.",
   "fleet.rename.tab": "Tab umbenennen",
   "fleet.rename.pane": "Pane umbenennen",

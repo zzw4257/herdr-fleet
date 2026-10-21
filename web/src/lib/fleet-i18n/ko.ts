@@ -200,6 +200,7 @@ export const ko: FleetDictionary = {
   "fleet.command.mic.alreadyRecording": "마이크가 이미 녹음 중입니다.",
   "fleet.command.mic.notRecording": "마이크가 녹음 중이 아닙니다.",
   "fleet.command.unavailable": "{name} 은(는) 여기서 사용할 수 없습니다.",
+  "fleet.chat.imageAlt": "세션의 이미지",
   "fleet.command.failed": "{name} 이(가) 완료되지 않았습니다.",
   "fleet.rename.tab": "탭 이름 변경",
   "fleet.rename.pane": "페인 이름 변경",

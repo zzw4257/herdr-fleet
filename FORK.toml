@@ -646,8 +646,8 @@ strategy = "adapt"
 review = "every-upstream-sync"
 reviewed = "v1.22.6"
 paths = ["web/src/components/chat-cards.tsx#data-chat-inset"]
-verify = ["web/src/components/fleet-chat-typography.test.tsx", "web/src/components/chat-cards.test.tsx"]
-reason = "Native cards own their content padding, so an inert attribute marks only these areas; the owned shell supplies density styles when a reader chooses them. Existing layout, interactive minimum heights and stream paint-containment wrappers stay native. Collie 1.19.2 wraps the command card's command and output in copyable blocks; the markers stand on the padded command row and output inside them."
+verify = ["web/src/components/fleet-chat-typography.test.tsx", "web/src/components/chat-cards.test.tsx", "web/src/components/fleet-chat-image.test.tsx"]
+reason = "Also carries journal-image-port's one `case \"image\"` that draws the fork-owned FleetChatImage, since this manifest allows one entry per path. Native cards own their content padding, so an inert attribute marks only these areas; the owned shell supplies density styles when a reader chooses them. Existing layout, interactive minimum heights and stream paint-containment wrappers stay native. Collie 1.19.2 wraps the command card's command and output in copyable blocks; the markers stand on the padded command row and output inside them."
 
 [[invasive]]
 id = "panel-navigation-ancestry-port"
@@ -717,8 +717,8 @@ contracts = ["a session whose only rollout is `rollout-<ts>-<uuid>_<segment-uuid
 verify = ["bridge/journal/fleet-codex-rollout-name.test.ts"]
 
 [[invasive]]
-id = "codex-segment-rollout-port"
-intent = "TEMPORARY compatibility port: let the Codex transcript source find Codex Desktop's segment-named rollouts, until upstream does."
+id = "codex-journal-port"
+intent = "TEMPORARY compatibility port: let the Codex journal find Codex Desktop's segment-named rollouts and carry the pictures its rows hold, until upstream does."
 strategy = "adapt"
 review = "every-upstream-sync"
 reviewed = "v1.22.6"
@@ -727,6 +727,40 @@ paths = [
 ]
 verify = [
   "bridge/journal/fleet-codex-rollout-name.test.ts",
-  "bridge/journal/codex.test.ts"
+  "bridge/journal/fleet-journal-images.test.ts",
+  "bridge/journal/codex.test.ts",
+  "bridge/journal/unknowns.test.ts"
 ]
-reason = "temporary until upstream matches segment names; retire at the sync adopting that release. Codex Desktop threads in paginated history mode write `rollout-<ts>-<uuid>_<segment-uuid>.jsonl`; CodexTranscriptSource.findUnder matched only the `-<uuid>.jsonl` suffix, so such a pane showed \"No transcript file was found\" although its rollout sits in the date directory being walked, in the same JSONL grammar. The decision lives in the fork-owned bridge/journal/fleet-codex-rollout-name.ts; the port is one import, findUnder taking the session id instead of a precomputed suffix, and the one call that picks the name (the anchor). Containment, the newest-date walk and the cache are upstream's, untouched. Upstream unaware as of v1.22.6."
+reason = "temporary until upstream matches segment names; retire at the sync adopting that release. Codex Desktop threads in paginated history mode write `rollout-<ts>-<uuid>_<segment-uuid>.jsonl`; CodexTranscriptSource.findUnder matched only the `-<uuid>.jsonl` suffix, so such a pane showed \"No transcript file was found\" although its rollout sits in the date directory being walked, in the same JSONL grammar. The decision lives in the fork-owned bridge/journal/fleet-codex-rollout-name.ts; the port is one import, findUnder taking the session id instead of a precomputed suffix, and the one call that picks the name (the anchor). Containment, the newest-date walk and the cache are upstream's, untouched. PICTURES (journal-image-port): a message's `input_image` blocks become image parts beside its text (an image-only message is kept), and a `function_call_output` / `custom_tool_call_output` list's first `input_image` becomes `result.imageUrl`, through the fork-owned bridge/journal/fleet-journal-images.ts and so through upstream's own `resolveImageUrl`; the grammar's known-block list is left alone so unknowns.test.ts keeps its fixture. Upstream unaware as of v1.22.6."
+
+[[owned]]
+id = "journal-image-compat"
+intent = "Hold the readers and the Chat card for the pictures Claude and Codex keep in their logs, with their suites."
+paths = [
+  "bridge/journal/fleet-journal-images.ts",
+  "bridge/journal/fleet-journal-images.test.ts",
+  "web/src/components/fleet-chat-image.tsx",
+  "web/src/components/fleet-chat-image.test.tsx"
+]
+contracts = ["a Claude tool_result's base64 picture and a Codex input_image become data URLs only through upstream's resolveImageUrl, bounded in size", "Chat draws a picture as an image under the call that returned it, loaded as History loads one"]
+verify = ["bridge/journal/fleet-journal-images.test.ts", "web/src/components/fleet-chat-image.test.tsx"]
+
+[[invasive]]
+id = "journal-image-port"
+intent = "Carry screenshots and pasted pictures from Claude and Codex logs into the journal, and draw journal pictures as images in Chat."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = [
+  "bridge/journal/claude.ts#claudeToolResultImageUrl(b.content)",
+  "web/src/lib/chat-items.ts#DOWNSTREAM PORT (FORK.toml journal-image-port)",
+  "web/src/lib/chat-items.test.ts#DOWNSTREAM PORT (FORK.toml journal-image-port)"
+]
+verify = [
+  "bridge/journal/fleet-journal-images.test.ts",
+  "bridge/journal/claude.test.ts",
+  "web/src/components/fleet-chat-image.test.tsx",
+  "web/src/components/chat-cards.test.tsx",
+  "web/src/lib/chat-items.test.ts"
+]
+reason = "Collie's readers keep a Claude tool_result's text blocks only and Codex's text blocks only, so a computer-use or browser screenshot never reached History, the mirror's picture card or Chat, and Chat drew even a journal picture as the notice 'Image: <url>'. The decisions live in fork-owned modules: bridge/journal/fleet-journal-images.ts reads the picture shapes (Claude `source.base64`, Codex `input_image.image_url`) and passes every value through upstream's resolveImageUrl, bounded at 8 M characters; web/src/components/fleet-chat-image.tsx draws one exactly as History's JournalImage does (imageSrc, then useAuthedUrl). The ports: claude.ts assigns the helper's answer to the answered call's `result.imageUrl` (and keeps an image-only orphan result); chat-items.ts adds an `image` ChatItem, turns an image part into one instead of a notice, and puts a tool result's `imageUrl` right after its call; the now-unused `t` import and the paragraph describing the notice go, and chat-items.test.ts restates its one notice case as an image block. Two paths this capability also touches are attributed elsewhere by this manifest, which allows one entry per path: bridge/journal/codex.ts rides codex-journal-port and web/src/components/chat-cards.tsx rides native-chat-density-markers. The mirror's picture card and History already read `result.imageUrl`, so they need no port. Upstream unaware as of v1.22.6."

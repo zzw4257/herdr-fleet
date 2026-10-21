@@ -12,13 +12,9 @@
 //
 // Nothing in it is async, touches the DOM or imports React, so every rule in it is table-testable.
 //
-// It resolves ONE string, and only because it is the one block here that is a sentence rather than a
-// fact: a journal part that is a picture has no image block to become, so it becomes a notice naming
-// the reference. `t()` is a synchronous lookup in a module store — no DOM, no React, no promise — so
-// the sentence above still holds. A view that MEMOISES the result must key that memo on the locale
-// revision (`useLocale().revision`), which `components/session-stream.tsx` does.
+// A picture the journal carried becomes an image block of its own (a Fleet port, FORK.toml
+// journal-image-port), so this module resolves no string at all.
 
-import { t } from "./i18n";
 import type { ToolCall, TranscriptEntry, TranscriptPart } from "./types";
 
 /** What became of a tool call, as a card colours it. */
@@ -53,6 +49,9 @@ export type ChatItem =
   | { id: string; ts?: string; kind: "reply"; text: string; partial?: true }
   | { id: string; ts?: string; kind: "thinking"; text: string; partial?: true }
   | { id: string; ts?: string; kind: "notice"; text: string; note?: true; partial?: true }
+  // DOWNSTREAM PORT (FORK.toml journal-image-port): a picture the journal carried — a pasted image or
+  // the screenshot a tool returned — drawn by the fork's own card.
+  | { id: string; ts?: string; kind: "image"; url: string }
   // A compaction. `text` is the agent's recap of its own history and is present only when the reader
   // asked for it (Settings → Appearance → Compaction summaries); without it the item is a one-line
   // marker, so the recap's thousands of characters are never built into a block at all.
@@ -167,13 +166,13 @@ export function itemsOf(entry: TranscriptEntry, showCompactions = false): ChatIt
         if (part.text.trim()) items.push({ id, ts, kind: "thinking", text: part.text, ...grows });
         return;
       case "image":
-        // There is no image block. A notice naming the URL is visible and honest; dropping the part
-        // would hide a picture the agent drew, which is the one thing the journal can see and the
-        // mirror cannot (pi draws by direct Kitty placement).
-        items.push({ id, ts, kind: "notice", text: t("chat.card.image", { url: part.url }) });
+        items.push({ id, ts, kind: "image", url: part.url });
         return;
       case "tool":
         items.push({ id, ts, kind: "tool", tool: toolOf(part), status: toolStatus(part) });
+        // The screenshot a tool returned stands right under its call, so a computer-use run reads as
+        // the steps it took and what each one saw.
+        if (part.result?.imageUrl) items.push({ id: `${id}:image`, ts, kind: "image", url: part.result.imageUrl });
         return;
     }
   });

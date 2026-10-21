@@ -52,6 +52,7 @@ import { claudeResets, lastTwoTurns, modelChosenAfter } from "./claude-resets.ts
 // from there for the same reason. The rule it enforces is not pi's, though: a journal is an AGENT's
 // output, so an `http://` value in a block never becomes a fetch the phone makes.
 import { resolveImageUrl } from "./pi.ts";
+import { claudeToolResultImageUrl } from "./fleet-journal-images.ts";
 import {
   containedRealpath,
   exists,
@@ -836,23 +837,23 @@ export function createClaudeReducer(opts: { includeSidechains?: boolean } = {}):
           // Tool output routinely carries colour codes (any command run through a shell) — strip
           // them, since this view renders text nodes rather than interpreting escapes.
           const resultText = stripAnsi(toolResultText(b.content));
+          // DOWNSTREAM PORT (FORK.toml journal-image-port): the screenshot a tool returned.
+          const imageUrl = claudeToolResultImageUrl(b.content);
           if (target) {
             pendingTools.delete(id);
             target.part.result = toolResult(resultText, b.is_error === true);
+            if (imageUrl !== undefined) target.part.result.imageUrl = imageUrl;
             // `toolUseResult` rides on the ROW, not on the content block: it is Claude's own record of
             // what the call did, and it is the only place a diff or an exit code ever appears.
             if (target.part.call) enrichCall(target.part.call, row.toolUseResult);
             // The mutation above landed in a turn that went out rows ago. Name it.
             changed.add(target.uuid);
-          } else if (resultText.trim() !== "") {
+          } else if (resultText.trim() !== "" || imageUrl !== undefined) {
             // Orphan result (its call fell outside a tail-read window) — keep it, unattached, so the
             // window never silently drops output.
-            parts.push({
-              kind: "tool",
-              name: "result",
-              summary: "",
-              result: toolResult(resultText, b.is_error === true),
-            });
+            const result: NonNullable<Extract<TranscriptPart, { kind: "tool" }>["result"]> = toolResult(resultText, b.is_error === true);
+            if (imageUrl !== undefined) result.imageUrl = imageUrl;
+            parts.push({ kind: "tool", name: "result", summary: "", result });
           }
         }
       }

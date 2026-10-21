@@ -199,6 +199,7 @@ export const en = {
   "fleet.command.mic.alreadyRecording": "The microphone is already recording.",
   "fleet.command.mic.notRecording": "The microphone is not recording.",
   "fleet.command.unavailable": "{name} is not available here.",
+  "fleet.chat.imageAlt": "Picture from the session",
   "fleet.command.failed": "{name} did not complete.",
   "fleet.rename.tab": "Rename tab",
   "fleet.rename.pane": "Rename pane",

@@ -46,6 +46,7 @@ import {
 import { asRecord, asText, probeTail, tokenCount, walkBack } from "./cache-probe.ts";
 import { containedRealpath, exists, loadTail, readSinceFile, rootList, statFile } from "./files.ts";
 import { pickCodexRollout } from "./fleet-codex-rollout-name.ts";
+import { codexImageUrls } from "./fleet-journal-images.ts";
 import { clamp, MAX_RESULT_CHARS, MAX_TEXT_CHARS, oneLine, stripAnsi, summarizeToolInput } from "./text.ts";
 import { classifyToolCall, type ToolCall } from "./tool-call.ts";
 import type {
@@ -415,9 +416,13 @@ export function createCodexReducer(): RowReducer {
       if (p.role !== "user" && p.role !== "assistant") return NO_CHANGE;
       const role = p.role;
       const body = stripAnsi(blockText(p.content));
-      if (body.trim() === "") return NO_CHANGE;
+      // DOWNSTREAM PORT (FORK.toml codex-journal-port): the pictures a message carries.
+      const images = codexImageUrls(p.content);
+      if (body.trim() === "" && images.length === 0) return NO_CHANGE;
       if (role === "user" && isInjectedContext(body)) return NO_CHANGE;
-      entries.push({ uuid, ts, role, parts: [{ kind: "text", ...clamp(body, MAX_TEXT_CHARS) }] });
+      const parts: TranscriptPart[] = body.trim() === "" ? [] : [{ kind: "text", ...clamp(body, MAX_TEXT_CHARS) }];
+      for (const url of images) parts.push({ kind: "image", url });
+      entries.push({ uuid, ts, role, parts });
       return reduction(entries, changed);
     }
 
@@ -480,6 +485,9 @@ export function createCodexReducer(): RowReducer {
         p.type === "custom_tool_call_output" ? codexExecOutput(p.output).body : codexToolOutput(p.output),
       );
       const result: ToolResult = clamp(outputText, MAX_RESULT_CHARS);
+      // DOWNSTREAM PORT (FORK.toml codex-journal-port): the screenshot a tool returned.
+      const imageUrl = codexImageUrls(p.output)[0];
+      if (imageUrl !== undefined) result.imageUrl = imageUrl;
       // Codex writes NO error flag on this row — a command that failed and one that worked are the
       // same shape, and the exit code sits in `metadata` rather than on the part. So `isError` stays
       // absent here, and only a refusal is marked (see REFUSED), because that one the text names.
@@ -494,7 +502,7 @@ export function createCodexReducer(): RowReducer {
         if (target.part.call) enrichCall(target.part.call, p.output);
         // The mutation above landed in a turn that went out rows ago. Name it.
         changed.add(target.uuid);
-      } else if (outputText.trim() !== "") {
+      } else if (outputText.trim() !== "" || imageUrl !== undefined) {
         // Orphan output (its call fell outside a tail-read window) — kept unattached so the window
         // never silently drops output.
         entries.push({
@@ -576,7 +584,7 @@ export class CodexTranscriptSource implements TranscriptSource {
           } catch {
             continue;
           }
-          // DOWNSTREAM PORT (FORK.toml codex-segment-rollout-port): also Codex Desktop's segment names.
+          // DOWNSTREAM PORT (FORK.toml codex-journal-port): also Codex Desktop's segment names.
           const hit = pickCodexRollout(names, sessionId);
           if (hit === undefined) continue;
           return containedRealpath(join(dir, hit), root);

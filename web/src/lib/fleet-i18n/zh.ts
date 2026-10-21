@@ -200,6 +200,7 @@ export const zh: FleetDictionary = {
   "fleet.command.mic.alreadyRecording": "麦克风已在录音。",
   "fleet.command.mic.notRecording": "麦克风当前没有在录音。",
   "fleet.command.unavailable": "{name} 在此处不可用。",
+  "fleet.chat.imageAlt": "会话中的图片",
   "fleet.command.failed": "{name} 未能完成。",
   "fleet.rename.tab": "重命名 Tab",
   "fleet.rename.pane": "重命名窗格",

@@ -19,6 +19,10 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+### Added
+
+- **Screenshots and pasted pictures from Claude and Codex show up.** A tool's screenshot appears under its call in Chat and in History and the mirror's picture card; Chat draws journal pictures as images, not as "Image:" lines.
+
 ## [3.20.0] - 2026-10-20
 
 Every member redeploys, lead first: the Codex transcript lookup is in the bridge; the rest is the web bundle and the Gateway.
