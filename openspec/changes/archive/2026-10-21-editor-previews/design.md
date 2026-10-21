@@ -1,0 +1,8 @@
+## Decisions
+
+- **Links, not a new read.** PDF, video and scripted HTML previews come from the editor, which already reads the operator's disk under its own login. Fleet adds no route that turns a client value into a path, so the journal path law and ADR 0083's Files bound are untouched.
+- **The setting lives in Fleet's settings document.** It is the operator's document, validated whole by the same parser on the Gateway and in the browser. `editor.url` must be an absolute `http(s)` URL with no credentials, query or fragment; a trailing slash is dropped. The browser reads it once per page load (and again after a save) through one shared store, because every link on the page asks for it.
+- **Loopback only, and only with a port.** The proxy rewrite matches `localhost`, `127.0.0.1`, `0.0.0.0` and `[::1]` with an explicit port and maps `http://localhost:5173/a?b#c` to `<editor>/proxy/5173/a?b#c`. Any other link is left exactly as it was. `/proxy/` strips the prefix, which suits static servers and APIs; a dev server that emits absolute asset paths needs its own base path, a known ceiling.
+- **Opening a file uses the editor's own URL contract.** `?folder=<root>` opens the folder, and `payload=[["openFile","vscode-remote://<editor host><absolute path>"]]` opens the file in it — the parameters the editor's workbench reads.
+- **Ports are one call each.** `markdown-text.tsx` and `ansi-output.tsx` pass an external `href` through `useFleetPreviewHref`; `changes.tsx` renders `FleetOpenInEditor` in the sticky file header. Everything else is fork-owned.
+- **A crew Pane gets no editor link.** Its folder is on another machine and the editor serves this one.
