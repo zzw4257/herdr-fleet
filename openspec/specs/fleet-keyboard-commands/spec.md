@@ -305,6 +305,7 @@ makes the command unfindable by the word the operator would use for it.
 | `send-left-arrow` / `send-right-arrow` | Send Left Arrow / Send Right Arrow | `[]` |
 | `send-space` | Send Space | `[]` |
 | `send-ctrl-c` | Send Ctrl+C | `[]` |
+| `new-tab-launcher-1` … `new-tab-launcher-9` | New Tab with Launcher 1 … New Tab with Launcher 9 | `[]` |
 
 `Ctrl+Shift+P` SHALL be the only direct-chord default. Pane mode SHALL be reached by removing the
 leading `/` from the query that chord opens, so a second entry chord is a configuration choice rather
@@ -335,8 +336,8 @@ reach the operator through the command bar or through their own configuration.
 Space, Tab, Pane and Agent commands SHALL resolve their target from the validated topology at the
 moment of invocation and SHALL navigate through Fleet's existing canonical route.
 
-`next-tab`, `previous-tab` and the nine Tab ordinals SHALL act only on Tabs in the current Space, and
-the two cycling commands SHALL wrap. `next-pane-in-tab` and `previous-pane-in-tab` SHALL act only on
+`next-tab`, `previous-tab` and the nine Tab ordinals SHALL act only on Tabs in the current Space that
+hold at least one Pane, the same Tabs the hierarchy draws, and the two cycling commands SHALL wrap. `next-pane-in-tab` and `previous-pane-in-tab` SHALL act only on
 Panes in the current Tab and SHALL wrap. `previous-pane` and `next-pane` SHALL walk the complete
 hierarchy order across every Host, Space, Tab and Pane. Agent cycling and the nine Agent ordinals
 SHALL resolve against the shared roster order.
@@ -346,7 +347,14 @@ entry and swap the pair, so repeated invocation toggles between the two most rec
 drop an entry once the topology proves that Pane is gone.
 
 `create-tab` SHALL derive the current Space and session, delegate the existing native create action,
-and open the returned Pane through the canonical route.
+and open the returned Pane through the canonical route. On a Space page with no current Pane, the
+current Space SHALL be the page's Space.
+
+`new-tab-launcher-1` … `new-tab-launcher-9` SHALL start the Nth launcher row of the current host as a
+new Tab beside the current Pane, through Collie's own launch-beside action, and open the returned Pane
+through the canonical route. On a Space page the beside Pane SHALL be the first Pane of that Space. A
+missing row or a Space with no Pane SHALL change no route and report one bounded unavailable result.
+The command SHALL carry only its id; the row is resolved from the host's launcher list at invocation.
 
 `copy-fleet-pane-link` SHALL copy a link built from the validated current route only. It SHALL copy
 no credential and SHALL leave the clipboard untouched when the current route is incomplete.
@@ -378,6 +386,22 @@ no credential and SHALL leave the clipboard untouched when the current route is 
 #### Scenario: The current route cannot make a link
 - **WHEN** `copy-fleet-pane-link` runs with no complete current Pane route
 - **THEN** the clipboard is unchanged and Fleet reports one bounded unavailable result
+
+#### Scenario: A Tab with no Pane is skipped
+- **WHEN** the current Space holds a Tab with no Pane between two Tabs that hold Panes and the operator invokes `next-tab`
+- **THEN** Fleet selects the next Tab that holds a Pane, and `select-tab-2` names that same Tab
+
+#### Scenario: A Tab is created from a Space page
+- **WHEN** the operator invokes `create-tab` on a Space page
+- **THEN** Fleet creates the Tab in that Space and opens its Pane
+
+#### Scenario: A launcher row opens beside the current Pane
+- **WHEN** the host lists two launcher rows and the operator invokes `new-tab-launcher-2` on a Pane
+- **THEN** Fleet starts the second row as a new Tab in the current Space and opens its Pane
+
+#### Scenario: A launcher ordinal does not exist
+- **WHEN** the operator invokes `new-tab-launcher-5` and the host lists two launcher rows
+- **THEN** Fleet changes no route and reports one bounded unavailable result
 
 ### Requirement: Renaming and closing open the actions Collie already has
 The **close** commands SHALL open Collie's own actions surface for the current Tab or Pane rather
