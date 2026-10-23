@@ -19,9 +19,13 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+## [3.21.1] - 2026-10-23
+
+Only the lead redeploys: the change is in the web bundle.
+
 ### Fixed
 
-- **Stale send notices can close without touching terminal input.** Dismiss notice removes only the ended receipt, even while another message is being sent.
+- **Stale send notices can close without touching terminal input.** Dismiss notice removes only the ended receipt, even while another message is being sent. ([a94ca831](https://github.com/zzw4257/herdr-fleet/commit/a94ca831))
 
 ## [3.21.0] - 2026-10-21
 
