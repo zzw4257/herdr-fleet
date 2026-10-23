@@ -842,3 +842,20 @@ reviewed = "v1.22.6"
 paths = ["web/src/components/file-preview.tsx#DOWNSTREAM PORT (FORK.toml preview-panel-ports)"]
 verify = ["web/src/components/file-preview.test.tsx", "web/src/components/fleet-file-media.test.tsx"]
 reason = "FileContent is Collie's and decides what a file reads as. Two ports: before the binary line, a file whose name a media read may serve (and that is binary, or named .pdf) is handed to the fork's FleetFileMedia with the screen's own binary line or Source as its fallback; the html preview kind wraps Collie's own HtmlPreview in the fork's FleetHtmlPreview, which keeps that script-less frame and adds a Run scripts switch for the lead's own Panes. Both render Collie's original output wherever no route names a Files subject, so Collie's own preview suite is unchanged. Upstream unaware as of v1.22.6."
+
+[[owned]]
+id = "held-notice-dismiss"
+intent = "Let an operator dismiss an ended typed notice without sending or clearing terminal input."
+paths = ["web/src/components/fleet-held-dismiss.tsx", "web/src/components/fleet-held-dismiss.test.tsx"]
+contracts = ["Fleet-only notice dismissal", "reuse the scoped DELETE route", "never send terminal input"]
+verify = ["web/src/components/fleet-held-dismiss.test.tsx"]
+
+[[invasive]]
+id = "held-notice-dismiss-port"
+intent = "Expose the held card's existing notice removal action for Fleet's typed-not-submitted notices."
+strategy = "adapt"
+review = "every-upstream-sync"
+reviewed = "v1.22.6"
+paths = ["web/src/components/composer-held.tsx#DOWNSTREAM PORT (FORK.toml held-notice-dismiss-port)"]
+verify = ["web/src/components/fleet-held-dismiss.test.tsx", "web/src/components/composer-held.test.tsx"]
+reason = "An ended typed_not_submitted card has no notice-only escape in Collie v1.22.6. The fork-owned FleetHeldDismiss supplies the build gate, words and control; the upstream card adds only an import and one render slot wired to its existing act/release closure. Reusing the scoped DELETE action removes the ended row without entering the terminal send protocol, and preserves upstream behavior in non-Fleet builds."

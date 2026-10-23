@@ -3,6 +3,8 @@
 // web/src/lib/i18n/messages/ carry none of these (FORK.toml fleet-runtime).
 
 export const en = {
+  "fleet.send.dismissNotice": "Dismiss notice",
+  "fleet.send.dismissNoticeHint": "Hide this notice without sending or changing terminal text",
   "fleet.panel.layout": "Grid layout",
   "fleet.panel.rows": "Rows",
   "fleet.panel.columns": "Columns",

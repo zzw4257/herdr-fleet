@@ -20,6 +20,8 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { QUEUED_BUTTON, QUEUED_FLOAT, QUEUED_FLOAT_TEXT, QUEUED_HEAD, QUEUED_LABEL } from "@/components/queued-block";
 import { Button } from "@/components/ui/button";
+// DOWNSTREAM PORT (FORK.toml held-notice-dismiss-port)
+import { FleetHeldDismiss } from "@/components/fleet-held-dismiss";
 import { useLocale } from "@/hooks/use-locale";
 import { cancelHeldSend, isApiErrorStatus } from "@/lib/api";
 import { describeThrownError } from "@/lib/api-error-message";
@@ -145,6 +147,7 @@ export function HeldCard({ paneId, scope, rows, canAct, sending, onSend, onChang
             <Button type="button" variant="outline" size="sm" className={QUEUED_BUTTON} disabled={disabled || sending} aria-label={t("composer.held.discardAria")} onClick={() => void settle(row, "discard")}>
               {t("composer.held.discard")}
             </Button>
+            <FleetHeldDismiss disabled={disabled} onDismiss={() => void act(row, () => release(row))} />
           </>
         )}
         {row.outcome !== "typed_not_submitted" && (

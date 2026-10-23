@@ -4,6 +4,8 @@ import type { FleetDictionary } from "./en";
 // error, and so is a key English does not have. Keep the `{slot}` names byte-exact.
 
 export const de: FleetDictionary = {
+  "fleet.send.dismissNotice": "Hinweis schließen",
+  "fleet.send.dismissNoticeHint": "Diesen Hinweis ausblenden, ohne Terminaltext zu senden oder zu ändern",
   "fleet.panel.layout": "Grid layout",
   "fleet.panel.rows": "Rows",
   "fleet.panel.columns": "Columns",

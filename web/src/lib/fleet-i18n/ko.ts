@@ -4,6 +4,8 @@ import type { FleetDictionary } from "./en";
 // error, and so is a key English does not have. Keep the `{slot}` names byte-exact.
 
 export const ko: FleetDictionary = {
+  "fleet.send.dismissNotice": "알림 닫기",
+  "fleet.send.dismissNoticeHint": "터미널 텍스트를 전송하거나 변경하지 않고 알림만 닫기",
   "fleet.panel.layout": "Grid layout",
   "fleet.panel.rows": "Rows",
   "fleet.panel.columns": "Columns",

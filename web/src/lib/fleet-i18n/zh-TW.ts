@@ -4,6 +4,8 @@ import type { FleetDictionary } from "./en";
 // error, and so is a key English does not have. Keep the `{slot}` names byte-exact.
 
 export const zhTW: FleetDictionary = {
+  "fleet.send.dismissNotice": "關閉提示",
+  "fleet.send.dismissNoticeHint": "僅關閉提示，不傳送或修改終端文字",
   "fleet.panel.layout": "Grid layout",
   "fleet.panel.rows": "Rows",
   "fleet.panel.columns": "Columns",

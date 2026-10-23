@@ -19,6 +19,10 @@ not, **must** match the `version` in `herdr-plugin.toml`, `package.json`, and `w
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stale send notices can close without touching terminal input.** Dismiss notice removes only the ended receipt, even while another message is being sent.
+
 ## [3.21.0] - 2026-10-21
 
 Every member redeploys, lead first: the Files media read and the journal's picture readers are in the bridge; the rest is the web bundle and the Gateway.
