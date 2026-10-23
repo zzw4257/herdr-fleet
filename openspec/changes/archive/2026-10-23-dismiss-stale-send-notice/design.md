@@ -5,3 +5,7 @@ A fork-owned FleetHeldDismiss component supplies a translated Dismiss notice but
 The same permission and in-flight guards apply. Dismissal remains available while another send is running because it cannot type. The existing backend refuses removal of an in-flight row. Record both the owned files and the upstream render port in FORK.toml; leave upstream ADRs and suites unchanged.
 
 A notice must not disappear merely because the agent becomes active: another message could have caused that activity. Explicit dismissal avoids falsely declaring delivery.
+
+## Delivery verification
+
+Released as 3.21.1, a frontend-only PATCH. The live browser showed Dismiss notice, and using it removed the stale card while keeping the composer present. No terminal input was submitted, no draft was cleared, and no backend or agent process was restarted. Archive follows this live check.
